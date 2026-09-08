@@ -12,7 +12,7 @@ namespace gz {
 void drawLinkDebug(){
  const auto pos=spritePosition(LinkDebug);
  char line[128];float y=pos.y;
- auto draw=[&](const char* format,auto... args){std::snprintf(line,sizeof(line),format,args...);drawGzText(line,pos.x,y);y+=20;};
+ auto draw=[&](const char* format,auto... args){if constexpr(sizeof...(args)==0)std::snprintf(line,sizeof(line),"%s",format);else std::snprintf(line,sizeof(line),format,args...);drawGzText(line,pos.x,y);y+=20;};
  const auto* audio=Z2GetStatusMgr();
  if(audio)draw("time: %02d:%02d",int(audio->mHour),int(audio->mMinute));else draw("time: n/a");
  auto* p=daAlink_getAlinkActorClass();
@@ -49,7 +49,7 @@ void drawDisplacement(){
 }
 void drawStageInfo(){
  const auto p=spritePosition(StageInfo);char line[128];
- auto draw=[&](float x,float y,const char* format,auto... args){std::snprintf(line,sizeof(line),format,args...);drawGzText(line,x,y);};
+ auto draw=[&](float x,float y,const char* format,auto... args){if constexpr(sizeof...(args)==0)std::snprintf(line,sizeof(line),"%s",format);else std::snprintf(line,sizeof(line),format,args...);drawGzText(line,x,y);};
  draw(p.x,p.y+20,"Stage: %s",dComIfGp_getStartStageName());
  draw(p.x,p.y+40,"Room: %d",int(dStage_roomControl_c::getStayNo()));
  draw(p.x,p.y+60,"Point: %d",int(dComIfGp_getStartStagePoint()));

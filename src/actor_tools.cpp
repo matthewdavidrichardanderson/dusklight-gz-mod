@@ -116,7 +116,7 @@ bool drawActorMenu(std::string_view page){
  if(page!="actor spawner"&&page!="actor list")return false;
  auto p=spritePosition(Menu);char text[256];int row=0;
  auto draw=[&](int selectedRow,const char* fmt,auto... args){
-  std::snprintf(text,sizeof(text),fmt,args...);
+  if constexpr(sizeof...(args)==0)std::snprintf(text,sizeof(text),"%s",fmt);else std::snprintf(text,sizeof(text),fmt,args...);
   drawGzText(text,p.x,p.y+20*row,row==selectedRow?cursorColor():0xffffffff);++row;
  };
  if(page=="actor spawner"){

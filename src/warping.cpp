@@ -102,7 +102,7 @@ bool drawWarpMenu(std::string_view page){
  if(page!="Warping")return false;
  auto p=spritePosition(Menu);char text[160];int row=0;
  auto draw=[&](const char* format,auto... args){
-  std::snprintf(text,sizeof(text),format,args...);
+  if constexpr(sizeof...(args)==0)std::snprintf(text,sizeof(text),"%s",format);else std::snprintf(text,sizeof(text),format,args...);
   const auto color=row==warpRow?cursorColor():0xffffffff;
   const std::string full=text;const auto split=full.find(" <");
   if(split==std::string::npos)drawGzText(full,p.x,p.y+20*row,color);
