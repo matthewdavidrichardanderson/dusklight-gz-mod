@@ -38,6 +38,7 @@ std::vector<fpc_ProcID> actorIds(){
  return ids;
 }
 fopAc_ac_c* selectedActor(){
+ if(!playable())return nullptr;
  if(auto* actor=fopAcM_SearchByID(selected))return actor;
  const auto ids=actorIds();
  if(ids.empty()){selected=~fpc_ProcID(0);return nullptr;}

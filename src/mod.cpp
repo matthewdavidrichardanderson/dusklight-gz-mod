@@ -17,7 +17,7 @@ IMPORT_SERVICE(ResourceService,svc_resource);
 IMPORT_SERVICE(GfxService,svc_gfx);
 namespace gz {ModResult initProjection();ModResult initTunic();ModResult initFastMovement();ModResult initFlagLog();ModResult initTriggers();ModResult initCollision();ModResult initActorTools();ModResult installScene();ModResult initCheckers();void initOverlays();void overlayTick();ModResult initGzMenu();void shutdownGzMenu();ModResult installPractice();void shutdownInput();void initItemWheel();void initCollectibles();void initWarping();ModResult initReload();ModResult initRng();ModResult initCamera();void cameraTick();void shutdownCamera();void reloadTick();}
 namespace gz {
-void resetRngForSpeedrun();void cancelPracticeForSpeedrun();void resetReloadForSpeedrun();void resetTimer();
+void initializeNativeOxygen();void resetRngForSpeedrun();void cancelPracticeForSpeedrun();void resetReloadForSpeedrun();void resetTimer();
 void suspendGz(){
  closeMenu();shutdownMoveLink();shutdownCamera();shutdownScene();shutdownInput();shutdownCheats();
  cancelPracticeForSpeedrun();resetReloadForSpeedrun();resetTimer();resetRngForSpeedrun();
@@ -49,6 +49,6 @@ MOD_EXPORT ModResult mod_initialize(ModError*) {
  r=gz::initGzMenu();if(r!=MOD_OK)return r;
  gz::refresh();svc_log->info(mod_ctx,"Dusk GZ initialized");return MOD_OK;
 }
-MOD_EXPORT ModResult mod_update(ModError*) {gz::speedrunTick();if(gz::speedrunBlocked())return MOD_OK;gz::refresh();gz::practiceTick();gz::reloadTick();gz::overlayTick();gz::inputTick();gz::cameraTick();gz::sceneTick();gz::cheatTick();return MOD_OK;}
+MOD_EXPORT ModResult mod_update(ModError*) {gz::speedrunTick();if(gz::speedrunBlocked())return MOD_OK;gz::refresh();gz::initializeNativeOxygen();gz::practiceTick();gz::reloadTick();gz::overlayTick();gz::inputTick();gz::cameraTick();gz::sceneTick();gz::cheatTick();return MOD_OK;}
 MOD_EXPORT ModResult mod_shutdown(ModError*) {gz::shutdownGzMenu();gz::shutdownMoveLink();gz::shutdownCamera();gz::shutdownScene();gz::shutdownInput();gz::shutdownCheats();return MOD_OK;}
 }

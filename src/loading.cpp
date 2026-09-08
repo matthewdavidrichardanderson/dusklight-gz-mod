@@ -1,6 +1,7 @@
 // GZ loading flag semantics via native lifecycle hooks; no private data-symbol dependency.
 #include "loading.hpp"
 #include "loading_logic.hpp"
+#include "link_tools.hpp"
 #include "f_op/f_op_scene_req.h"
 #include "f_op/f_op_overlap_mng.h"
 #include "SSystem/SComponent/c_phase.h"
@@ -14,6 +15,8 @@ ModResult initLoading(){
  state.active=fopOvlpM_IsDoingReq()!=0;
  auto r=guardedPost<SceneRequested>([](ModContext*,void* args,void* result,void*){
   state.requested(*static_cast<fpc_ProcID*>(result),mods::arg<s16>(args,4));
+  // Release tool-owned actor and event state before scene teardown.
+  if(state.active){shutdownMoveLink();shutdownCamera();}
  });
  if(r!=MOD_OK)return r;
  return guardedPost<SceneFinished>([](ModContext*,void*,void*,void*){state.completed();});

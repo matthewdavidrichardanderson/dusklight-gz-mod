@@ -191,7 +191,10 @@ static void drawMenu(){
  float labelWidth=0;for(const auto& r:list)labelWidth=std::max(labelWidth,gzTextWidth(r.label));
  for(size_t i=first;i<std::min(list.size(),last+1);i++){
   const auto& row=list[i];std::string label=row.label,valueText;bool emptyToggle=false;
-  const bool unavailable=row.control&&disabled(*row.control);
+  // Save lists retain their normal colors while a load is pending.
+  // Activation still uses disabled() to prevent overlapping requests.
+  const bool unavailable=row.control&&(page.name.starts_with("practice:")?
+   !row.control->reason.empty():disabled(*row.control));
   if(auto* c=row.control;c&&(!c->gameOnly||playable())){
    if(c->get){
     const auto value=c->get();

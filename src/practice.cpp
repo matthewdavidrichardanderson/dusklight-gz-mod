@@ -13,6 +13,7 @@
 #include <cstring>
 #include <type_traits>
 #include <cstddef>
+#include "oxygen_init.hpp"
 #include "practice_specials.hpp"
 #include "practice_load_sequence.hpp"
 namespace gz {
@@ -38,6 +39,7 @@ using SetupCallback=void(*)();
 static SetupCallback pendingAfter=nullptr,lastDuring=nullptr,lastAfter=nullptr;
 static unsigned actorWaitFrames=0;
 static std::string lastLoadLabel;
+void initializeNativeOxygen(){initializeOxygen(g_dComIfG_gameInfo.play);}
 static bool noSpecial(const char* name){return std::strcmp(name,"nullptr")==0;}
 static bool supported(const PracticeEntry& e){return e.present&&supportsSpecial(e.during)&&supportsSpecial(e.after);}
 static void loadPractice(const PracticeEntry& e,SetupCallback during=nullptr,SetupCallback after=nullptr,const char* label=nullptr){
@@ -84,7 +86,7 @@ static void loadPractice(const PracticeEntry& e,SetupCallback during=nullptr,Set
  composePracticeDestination(g_dComIfG_gameInfo.play.mNextStage,ret.getName(),ret.getRoomNo(),ret.getPlayerStatus(),layer,[&](){
   if(during)during();else runSpecial(e.during,e);
  });
- closeMenu();notify(std::string("Loading practice: ")+lastLoadLabel);
+ closeMenu();svc_log->info(mod_ctx,(std::string("Loading practice: ")+lastLoadLabel).c_str());
 }
 void loadCheckerPractice(const char* resource,const char* label,SetupCallback during,SetupCallback after){
  for(const auto& entry:practiceEntries)if(std::strcmp(entry.path,resource)==0){
@@ -99,6 +101,7 @@ void cancelPracticeForSpeedrun(){
 bool practiceLoadPending(){return pendingEntry!=nullptr;}
 void reloadPractice(){if(lastEntry){const auto label=lastLoadLabel;loadPractice(*lastEntry,lastDuring,lastAfter,label.c_str());}else notify("No practice save loaded yet");}
 void practiceTick(){
+ initializeNativeOxygen();
  if(!pendingEntry||!arrived||!playable()||sceneLoading())return;
  // Raw practice injection bypasses regular save loading's setNowVibration.
  // Restore once after arrival, independently of later actor-setup waits.

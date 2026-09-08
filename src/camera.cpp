@@ -1,6 +1,7 @@
 // GZ free-camera motion with Dusk camera submission and native event control.
 #include "core.hpp"
 #include "link_tools.hpp"
+#include "loading.hpp"
 #include "camera_logic.hpp"
 #include "mods/svc/camera.h"
 #include "d/d_com_inf_game.h"
@@ -16,13 +17,13 @@ static CameraOperatorHandle cameraHandle=0;
 static FreeCamera camera;
 bool freeCameraPosition(cXyz& out){if(!active)return false;out.set(float(camera.eye[0]),float(camera.eye[1]),float(camera.eye[2]));return true;}
 static void releaseEvent(){
- auto* player=daPy_getPlayerActorClass();
- if(leased&&player&&fopAcM_GetID(player)==owner&&dComIfGp_getEvent()->mEventStatus==1)
+ // The event halt is global and survives replacement of the player actor.
+ if(leased&&dComIfGp_getEvent()->mEventStatus==1)
   dComIfGp_getEvent()->mEventStatus=savedEventStatus;
  leased=false;
 }
 void toggleFreeCamera(){
- if(!playable())return;
+ if(!playable()||sceneLoading())return;
  if(active){active=false;releaseEvent();notify("Free camera disabled");return;}
  auto* body=dCam_getBody();if(!body)return;
  shutdownMoveLink();
@@ -34,7 +35,7 @@ void toggleFreeCamera(){
 }
 void cameraTick(){
  auto* player=daPy_getPlayerActorClass();
- if(!playable()||!on("free_cam")||!player||fopAcM_GetID(player)!=owner){
+ if(!playable()||sceneLoading()||!on("free_cam")||!player||fopAcM_GetID(player)!=owner){
   active=false;releaseEvent();return;
  }
  if(active)dComIfGp_getEvent()->mEventStatus=1; // GZ's mHalt is this decomp field.
@@ -45,7 +46,7 @@ ModResult initCamera(){
  CameraOperatorDesc desc=CAMERA_OPERATOR_DESC_INIT;
  desc.debug_name="TPGZ free camera";
  desc.operate=[](ModContext*,CameraOperatorState* state,void*){
-  if(!active||!playable())return false;
+  if(!active||!playable()||sceneLoading())return false;
   bool visible=false;svc_ui->is_any_document_visible(mod_ctx,&visible);
   if(!visible&&!gzMenuOpen())if(auto* pad=mDoCPd_c::getGamePad(0)){
    const auto& buttons=pad->mButton;

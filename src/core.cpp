@@ -1,10 +1,11 @@
 #include "core.hpp"
+#include "loading.hpp"
 #include "d/d_com_inf_game.h"
 #include "d/actor/d_a_player.h"
 #include <algorithm>
 namespace gz {
 std::deque<Control> controls;
-bool playable() { return !speedrunBlocked() && daPy_getPlayerActorClass() != nullptr && !dComIfGp_isEnableNextStage(); }
+bool playable() { return !speedrunBlocked() && !sceneLoading() && daPy_getPlayerActorClass() != nullptr && !dComIfGp_isEnableNextStage(); }
 Control& toggle(const char* id,const char* group,const char* label,const char* help,bool initial) {
  controls.emplace_back(); auto& c=controls.back(); c.id=id;c.group=group;c.label=label;c.help=help;
  ConfigVarDesc d=CONFIG_VAR_DESC_INIT;d.name=id;d.type=CONFIG_VAR_BOOL;d.default_bool=initial;
