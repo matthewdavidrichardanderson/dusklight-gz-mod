@@ -14,7 +14,9 @@ static ModResult initMovementSettings(){
  findHostSetting=reinterpret_cast<decltype(findHostSetting)>(address);
  const char* names[]={"game.fastRoll","game.enableFastIronBoots","game.invertAirSwimX","game.invertAirSwimY"};
  for(unsigned i=0;i<4;i++){
-  movementSettings[i]=dynamic_cast<dusk::config::ConfigVar<bool>*>(findHostSetting(names[i]));
+  // These four registered host settings are declared ConfigVar<bool>.
+  // Do not import host RTTI: it is not part of the exported mod ABI.
+  movementSettings[i]=static_cast<dusk::config::ConfigVar<bool>*>(findHostSetting(names[i]));
   if(!movementSettings[i]){
    svc_log->error(mod_ctx,"Native movement settings differ from this upstream build.");
    return MOD_UNSUPPORTED;

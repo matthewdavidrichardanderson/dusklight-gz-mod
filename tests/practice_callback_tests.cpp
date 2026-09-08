@@ -11,7 +11,9 @@
 #include <stdexcept>
 #include <numbers>
 using s16=int16_t;using u16=uint16_t;using u32=uint32_t;using f32=float;
+#ifndef M_PI
 constexpr double M_PI=std::numbers::pi;
+#endif
 struct cXyz{float x=0,y=0,z=0;cXyz()=default;cXyz(float a,float b,float c):x(a),y(b),z(c){}void set(float a,float b,float c){x=a;y=b;z=c;}};
 struct fopAc_ac_c{int name=0;u32 param=0,status=0;int room=0;struct{cXyz pos;}current;struct{s16 y=0;}shape_angle;};
 struct Link:fopAc_ac_c{int mEquipItem=0,mNoResetFlg2=0,swords=0;u32 boots=0;void swordEquip(int){swords++;}void onNoResetFlg0(u32 b){boots|=b;}}link;

@@ -36,7 +36,7 @@ jobs:
             runner: windows-latest
             msvc_arch: amd64
           - platform: windows-arm64
-            runner: windows-latest
+            runner: windows-11-arm
             msvc_arch: amd64_arm64
 
     steps:
