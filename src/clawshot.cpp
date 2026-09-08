@@ -5,6 +5,8 @@
  * No writable-const tricks or Dusk cheat settings.
  */
 #include "core.hpp"
+#include "clawshot_chain.hpp"
+#include <cmath>
 #include "d/actor/d_a_alink.h"
 #include "d/actor/d_a_obj_swhang.h"
 #include "d/actor/d_a_b_dr.h"
@@ -599,12 +601,192 @@ int daAlink_c::procHookshotFly() {
 }
 
 
+// Sample the same four anchors as the host's Alink draw routine. Keep the
+// history in the mod: the host's AlinkInterp is private, not an SDK ABI.
+namespace {
+using InterpEnabled = bool(*)();
+using InterpStep = float(*)();
+using SimSequence = uint64_t(*)();
+InterpEnabled chainInterpEnabled = nullptr;
+InterpStep chainInterpStep = nullptr;
+SimSequence chainSimSequence = nullptr;
+gz::ChainHistory<cXyz> chainHistory;
+cXyz chainAnchors[4];
+fpc_ProcID chainOwner = ~fpc_ProcID(0);
+void readChainAnchors(daAlink_c* link, cXyz* anchors) {
+    anchors[0] = link->getHsChainTopPos();
+    anchors[1] = link->getHsChainRootPos();
+    anchors[2] = link->getHsSubChainRootPos();
+    anchors[3] = link->getHsSubChainTopPos();
+}
+}
+
+// Original chain geometry, spacing, twist, swing, lighting and fog; no 600-link
+// cutoff. Iron Ball continues through the native renderer.
+void daAlink_c::hsChainShape_c::draw() {
+    daAlink_c* alink = (daAlink_c*)getUserArea();
+    J3DModelData* modelData = alink->getItemModelData();
+    J3DMaterial* material = modelData->getMaterialNodePointer(0);
+    daAlink_hsChainLight_c* chainLight = (daAlink_hsChainLight_c*)&alink->tevStr;
+
+    j3dSys.setVtxPos(modelData->getVtxPosArray(), modelData->getVtxNum());
+    j3dSys.setVtxNrm(modelData->getVtxNrmArray(), modelData->getNrmNum());
+    j3dSys.setVtxCol(modelData->getVtxColorArray(0), modelData->getColNum());
+    j3dSys.setTexture(modelData->getTexture());
+    J3DShape::resetVcdVatCache();
+
+    material->loadSharedDL();
+    material->getShape()->loadPreDrawSetting();
+
+    GXColor ambColor;
+    ambColor.r = chainLight->AmbCol.r;
+    ambColor.g = chainLight->AmbCol.g;
+    ambColor.b = chainLight->AmbCol.b;
+    ambColor.a = chainLight->AmbCol.a;
+
+    GXSetChanAmbColor(GX_COLOR0A0, ambColor);
+    GXSetChanMatColor(GX_COLOR0A0, g_whiteColor);
+
+    dKy_setLight_again();
+    dKy_GxFog_tevstr_set(chainLight);
+    GXLoadLightObjImm(chainLight->getLightObj(), GX_LIGHT0);
+
+
+    cXyz anchors[4];
+    readChainAnchors(alink, anchors);
+    if (chainOwner == fopAcM_GetID(alink) && chainInterpEnabled()) {
+        chainHistory.interpolate(anchors, chainInterpStep());
+    }
+        const cXyz& chainRootPos = anchors[1];
+        const cXyz& chainTopPos = anchors[0];
+        cXyz maxDistance = chainRootPos - chainTopPos;
+
+        f32 maxDistanceF = maxDistance.abs();
+        f32 var_f30;
+        cXyz sp98;
+        csXyz sp6C;
+
+        if (std::isfinite(maxDistanceF) && maxDistanceF > 1.0f) {
+            maxDistance *= (1.0f / maxDistanceF);
+            var_f30 = 0.0f;
+
+            sp98 = chainTopPos;
+            sp6C.set(maxDistance.atan2sY_XZ(), maxDistance.atan2sX_Z(), 0);
+            sp98 = chainTopPos;
+
+            csXyz sp64(sp6C);
+
+            f32 sp34 = M_PI / maxDistanceF;
+
+            f32 temp_f27;
+            f32 var_f26 = 0.0f;
+            f32 var_f28;
+
+            var_f28 = 2.5f * alink->getHookshotStopTime();
+            if (alink->getHookshotStopTime() & 1) {
+                var_f28 *= -1.0f;
+            }
+            (void)0;
+
+
+
+            while (maxDistanceF > var_f30) {
+                temp_f27 = var_f28 * cM_fsin(sp34 * var_f30);
+                s16 spC = cM_atan2s(temp_f27 - var_f26, 5.0f);
+                sp64.x = sp6C.x + spC;
+
+                mDoMtx_stack_c::transS(sp98);
+                mDoMtx_stack_c::ZXYrotM(sp64);
+
+                static const Vec hsVec = {0.0f, 0.0f, 5.0f};
+                mDoMtx_stack_c::multVec(&hsVec, &sp98);
+
+                mDoMtx_stack_c::revConcat(j3dSys.getViewMtx());
+
+                GXLoadPosMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
+                GXLoadNrmMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
+
+                material->getShape()->simpleDrawCache();
+
+                ANGLE_ADD_2(sp64.z, 0x3000);
+
+                var_f26 = temp_f27;
+                var_f30 += fabsf(cM_scos(spC)) * 5.0f;
+
+
+            }
+        }
+
+        const cXyz& subChainRootPos = anchors[2];
+        const cXyz& subChainTopPos = anchors[3];
+        maxDistance = subChainRootPos - subChainTopPos;
+
+        maxDistanceF = maxDistance.abs();
+        if (std::isfinite(maxDistanceF) && maxDistanceF > 1.0f) {
+            maxDistance *= (1.0f / maxDistanceF);
+            var_f30 = 0.0f;
+
+            sp98 = subChainTopPos;
+            sp6C.set(maxDistance.atan2sY_XZ(), maxDistance.atan2sX_Z(), 0);
+
+
+
+            while (maxDistanceF > var_f30) {
+                mDoMtx_stack_c::copy(j3dSys.getViewMtx());
+                mDoMtx_stack_c::transM(sp98);
+                mDoMtx_stack_c::ZXYrotM(sp6C);
+
+                GXLoadPosMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
+                GXLoadNrmMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
+
+                material->getShape()->simpleDrawCache();
+
+                sp98 += maxDistance * 5.0f;
+                ANGLE_ADD_2(sp6C.z, 0x3000);
+                var_f30 += 5.0f;
+
+            }
+        }
+
+}
+
+
 namespace gz {
 DEFINE_HOOK_SYMBOL("daAlink_c::setHookshotSight",void(daAlink_c*),ClawSight);
 DEFINE_HOOK_SYMBOL("daAlink_c::setHookshotPos",void(daAlink_c*),ClawPos);
 DEFINE_HOOK_SYMBOL("daAlink_c::procHookshotFly",int(daAlink_c*),ClawFly);
 DEFINE_HOOK(&daAlink_c::checkHookshotStickBG,ClawStick);
+DEFINE_HOOK_SYMBOL("daAlink_c::hsChainShape_c::draw",void(daAlink_c::hsChainShape_c*),ClawChainDraw);
+DEFINE_HOOK_SYMBOL("daAlink_c::draw",int(daAlink_c*),ClawAnchorCapture);
 ModResult initClawshot(){
+ void* address=nullptr;HookSymbolFlags flags{};
+ auto resolved=svc_hook->resolve(mod_ctx,"dusk::interp::is_enabled",&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
+ chainInterpEnabled=reinterpret_cast<InterpEnabled>(address);
+ resolved=svc_hook->resolve(mod_ctx,"dusk::interp::get_interpolation_step",&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
+ chainInterpStep=reinterpret_cast<InterpStep>(address);
+ resolved=svc_hook->resolve(mod_ctx,"dusk::interp::sim_tick_seq",&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
+ chainSimSequence=reinterpret_cast<SimSequence>(address);
+ // This observer also clears history while suspended; it never changes game state.
+ resolved=mods::hook::add_post<ClawAnchorCapture>([](ModContext*,void* a,void*,void*){
+  auto* link=mods::arg<daAlink_c*>(a,0);
+  if(speedrunBlocked()||!on("super_clawshot")||!link->checkHookshotItem(link->mEquipItem)||!chainInterpEnabled()){
+   chainHistory.reset();chainOwner=~fpc_ProcID(0);return;
+  }
+  const auto owner=fopAcM_GetID(link);
+  if(owner!=chainOwner){chainHistory.reset();chainOwner=owner;}
+  readChainAnchors(link,chainAnchors);
+  chainHistory.capture(chainAnchors,chainSimSequence());
+ });if(resolved!=MOD_OK)return resolved;
+ resolved=guardedPre<ClawChainDraw>([](ModContext*,void* a,void*,void*){
+  if(!on("super_clawshot"))return HOOK_CONTINUE;
+  auto* packet=mods::arg<daAlink_c::hsChainShape_c*>(a,0);
+  auto* link=reinterpret_cast<daAlink_c*>(packet->getUserArea());
+  if(!link||!link->checkHookshotItem(link->mEquipItem))return HOOK_CONTINUE;
+  packet->daAlink_c::hsChainShape_c::draw();return HOOK_SKIP_ORIGINAL;
+ });if(resolved!=MOD_OK)return resolved;
  auto r=guardedPre<ClawSight>([](ModContext*,void* a,void*,void*){
   if(!on("super_clawshot"))return HOOK_CONTINUE;
   mods::arg<daAlink_c*>(a,0)->setHookshotSight();return HOOK_SKIP_ORIGINAL;

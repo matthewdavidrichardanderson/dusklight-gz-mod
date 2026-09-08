@@ -1,4 +1,5 @@
 #include "rng_logic.hpp"
+#include "clawshot_chain.hpp"
 #include "camera_logic.hpp"
 #include "actor_motion.hpp"
 #include <cstdlib>
@@ -7,6 +8,19 @@ static void check(bool value,const char* message){if(!value){std::cerr<<message<
 static bool near(double a,double b){return std::abs(a-b)<0.000001;}
 int main(){
  using namespace gz;
+ ChainHistory<float> chain;
+ float anchors[4]={0,10,20,30}, result[4]{};
+ chain.capture(anchors,1);chain.interpolate(result,.5f);
+ check(near(result[1],10),"First chain sample must not interpolate from zero");
+ for(auto& v:anchors)v+=100;
+ chain.capture(anchors,2);chain.interpolate(result,.5f);
+ check(near(result[0],50)&&near(result[3],80),"Both chain endpoints must interpolate at the native frame fraction");
+ chain.capture(anchors,2);chain.interpolate(result,.5f);
+ check(near(result[0],50),"Repeated draw in one simulation tick must not advance chain history");
+ chain.capture(anchors,5);chain.interpolate(result,.5f);
+ check(near(result[0],100),"Hidden or interrupted chain must not blend stale endpoints");
+ chain.reset();anchors[0]=70000;chain.capture(anchors,6);chain.interpolate(result,.5f);
+ check(near(result[0],70000),"New actor or re-enabled chain must retain full length without stale interpolation");
  RngState state{100,100,100};
  constexpr RngState expected[]={{17100,17200,17000},{18276,18621,9315},{7489,20577,6754},{9321,23632,26229}};
  for(auto next:expected){state=advanceRng(state);check(state==next,"RNG sequence diverged from GZ Wichmann-Hill constants");}
