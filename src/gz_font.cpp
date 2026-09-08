@@ -9,7 +9,7 @@
 #include <vector>
 namespace gz {
 struct Font{FontData data;uint64_t texture=0;};
-static std::array<Font,8> fonts;
+static std::array<Font,9> fonts;
 static int loadedFont=-1;
 static bool drawing=false;
 static std::vector<std::array<float,2>> vertices;
@@ -18,7 +18,7 @@ static unsigned primitive=0,lineWidth=16;
 ModResult initGzFont(){
  const int next=fontChoice();if(fonts[next].texture){loadedFont=next;return MOD_OK;}
  ResourceBuffer buffer=RESOURCE_BUFFER_INIT;
- static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans"};
+ static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans","triforce"};
  const auto path=std::string("fonts/")+names[next]+".fnt";
  auto r=svc_resource->load(mod_ctx,path.c_str(),&buffer);if(r!=MOD_OK)return r;
  FontData data;std::span bytes(static_cast<const unsigned char*>(buffer.data),buffer.size);
@@ -35,13 +35,17 @@ void beginGzDraw(){
  drawing=beginForeground();if(!drawing)return;
  if(loadedFont!=fontChoice()&&initGzFont()!=MOD_OK&&loadedFont<0)drawing=false;
 }
+// Triforce digits use oversized display capitals; reduce them around the
+// same baseline, including their advance so alignment and measurement agree.
+static float glyphScale(unsigned char c){return loadedFont==8&&c>='0'&&c<='9'?.85f:1.f;}
 static void drawText(const std::string& text,float x,float y,uint32_t color,float size){
  if(!drawing||loadedFont<0)return;
  const auto& font=fonts[loadedFont];const auto& f=font.data;
- const float scale=size/f.baseSize;
+ const float baseScale=size/f.baseSize;
  for(unsigned char c:text){
   if(c>=f.glyphs.size())c='?';
   const auto& g=f.glyphs[c];
+  const float scale=baseScale*glyphScale(c);
   foregroundQuad(font.texture,x+g.offset*scale,y-f.ascender*scale,x+(g.width+g.offset)*scale,y+f.descender*scale,g.minX,g.minY,g.maxX,g.maxY,color);
   x+=g.width*scale;
  }
@@ -51,7 +55,7 @@ void drawGzText(const std::string& text,float x,float y,uint32_t color,float siz
 }
 float gzTextWidth(const std::string& text,float size){
  if(loadedFont<0)return 0;const auto& f=fonts[loadedFont].data;
- float width=0;for(unsigned char c:text){if(c>=f.glyphs.size())c='?';width+=f.glyphs[c].width*size/f.baseSize;}return width;
+ float width=0;for(unsigned char c:text){if(c>=f.glyphs.size())c='?';width+=f.glyphs[c].width*size/f.baseSize*glyphScale(c);}return width;
 }
 void drawGzTextPlain(const std::string& text,float x,float y,uint32_t color,float size){drawText(text,x,y,color,size);}
 void beginGzShape(unsigned count,unsigned kind,unsigned width){

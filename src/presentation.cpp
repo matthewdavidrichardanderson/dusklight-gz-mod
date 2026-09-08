@@ -12,7 +12,7 @@ static constexpr const char* names[]={"menu","input","debug","stage","timer","lo
 // Pinned TPGZ modules/init/src/main.cpp, GZ_PosSettings_initDefaults (GCN).
 static constexpr SpritePosition defaults[]={{25,60},{220,380},{450,200},{145,350},{450,420},{450,30},{35,30},{5,440},{145,25},{450,400},{465,30},{450,60}};
 static constexpr SpritePosition legacyDefaults[]={{25,60},{20,363},{360,70},{360,295},{20,315},{20,350},{20,335},{20,290},{360,30},{20,270},{570,30},{360,235}};
-int fontChoice(){int64_t v=0;svc_config->get_int(mod_ctx,fontVar,&v);return int(std::clamp<int64_t>(v,0,7));}
+int fontChoice(){int64_t v=0;svc_config->get_int(mod_ctx,fontVar,&v);return int(std::clamp<int64_t>(v,0,8));}
 uint32_t cursorColor(){
  static constexpr uint32_t colors[]={0x00cc00ff,0x0080ffff,0xcc0000ff,0xee8000ff,0xffcc00ff,0x6600ccff,0xec80ffff,0x7ae6f0ff};
  int64_t v=0;svc_config->get_int(mod_ctx,colorVar,&v);return colors[std::clamp<int64_t>(v,0,7)];
@@ -48,7 +48,7 @@ ModResult initPresentation(){
    [h](int64_t v){svc_config->set_int(mod_ctx,h,v);});c.gameOnly=false;return MOD_OK;
  };
  auto r=select("cursor_color","Cursor color",{"green","blue","red","orange","yellow","purple","pink","cyan"},colorVar);if(r!=MOD_OK)return r;
- r=select("font","Font",{"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans"},fontVar);if(r!=MOD_OK)return r;
+ r=select("font","Font",{"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans","triforce"},fontVar);if(r!=MOD_OK)return r;
  for(int i=0;i<SpriteCount;i++)for(int axis=0;axis<2;axis++){
   const auto key=std::string("pos_")+names[i]+(axis?"_y":"_x");
   ConfigVarDesc d=CONFIG_VAR_DESC_INIT;d.name=key.c_str();d.type=CONFIG_VAR_FLOAT;d.default_float=axis?defaults[i].y:defaults[i].x;
