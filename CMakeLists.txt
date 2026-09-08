@@ -62,7 +62,7 @@ add_mod(dusk_gz FEATURES game webgpu
 if(MSVC)
  target_link_options(dusk_gz PRIVATE "/PDBALTPATH:dusk_gz.pdb")
 endif()
-set_source_files_properties(src/link_movement.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
+set_source_files_properties(src/link_movement.cpp src/input.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
 if(PROJECT_IS_TOP_LEVEL)
  include(CTest)
 endif()

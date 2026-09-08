@@ -1,5 +1,6 @@
 // Movement and controls from TPGZ features/moveactor (GPL-3.0).
 #include "core.hpp"
+#include "actor_tools.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"
 #include "mods/svc/camera.h"
@@ -102,7 +103,7 @@ ModResult initLinkTools(){
   return HOOK_CONTINUE;
  });if(r!=MOD_OK)return r;
  return guardedPre<MoveGravity>([](ModContext*,void* args,void*,void*){
-  if(active)mods::arg_ref<float>(args,1)=0.f;
+  if(active||actorViewActive())mods::arg_ref<float>(args,1)=0.f;
   return HOOK_CONTINUE;
  });
 }

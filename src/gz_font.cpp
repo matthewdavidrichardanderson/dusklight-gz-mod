@@ -9,7 +9,7 @@
 #include <vector>
 namespace gz {
 struct Font{FontData data;uint64_t texture=0;};
-static std::array<Font,7> fonts;
+static std::array<Font,8> fonts;
 static int loadedFont=-1;
 static bool drawing=false;
 static std::vector<std::array<float,2>> vertices;
@@ -18,7 +18,7 @@ static unsigned primitive=0,lineWidth=16;
 ModResult initGzFont(){
  const int next=fontChoice();if(fonts[next].texture){loadedFont=next;return MOD_OK;}
  ResourceBuffer buffer=RESOURCE_BUFFER_INIT;
- static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p"};
+ static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans"};
  const auto path=std::string("fonts/")+names[next]+".fnt";
  auto r=svc_resource->load(mod_ctx,path.c_str(),&buffer);if(r!=MOD_OK)return r;
  FontData data;std::span bytes(static_cast<const unsigned char*>(buffer.data),buffer.size);
@@ -47,7 +47,7 @@ static void drawText(const std::string& text,float x,float y,uint32_t color,floa
  }
 }
 void drawGzText(const std::string& text,float x,float y,uint32_t color,float size){
- if(on("drop_shadows"))drawText(text,x+1,y+1,0x00000060,size);drawText(text,x,y,color,size);
+ if(on("drop_shadows"))drawText(text,x+1,y+1,0x000000ff,size);drawText(text,x,y,color,size);
 }
 float gzTextWidth(const std::string& text,float size){
  if(loadedFont<0)return 0;const auto& f=fonts[loadedFont].data;

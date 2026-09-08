@@ -1,5 +1,6 @@
 // Original GZ collision colors, bounds and ordering using native debug geometry.
 #include "core.hpp"
+#include "JSystem/J3DGraphBase/J3DSys.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_bg_s_capt_poly.h"
 #include "d/d_debug_viewer.h"
@@ -10,6 +11,12 @@ namespace gz {
 bool freeCameraPosition(cXyz&);
 namespace {
 int range=100,raise=1,opacity=128;
+// Both passes must use the same world list, regardless of the last actor's list.
+struct MainXluList {
+ J3DDrawBuffer* previous=j3dSys.getDrawBuffer(1);
+ MainXluList(){g_dComIfG_gameInfo.drawlist.setXluList();}
+ ~MainXluList(){j3dSys.setDrawBuffer(previous,1);}
+};
 int polygon(dBgS_CaptPoly*,cBgD_Vtx_t* v,int a,int b,int c,cM3dGPla* plane,bool edges){
  const float y=plane->mNormal.y;
  const bool ground=cBgW_CheckBGround(y),roof=!ground&&cBgW_CheckBRoof(y);
@@ -35,7 +42,10 @@ void capture(dBgS_CaptPoly& query){
 }
 u8 geometryOpacity(){return u8(opacity);}
 void setGeometryOpacity(int v){opacity=v;}
-DEFINE_HOOK_SYMBOL("dDbVw_deleteDrawPacketList",void(),CollisionFrame);
+// GZ appends polygons after the preceding actor draw, before painting it.
+// Dusk separates presentation: append at the end of packet collection instead.
+// entryImm prepends, so faces/edges render before depth-writing colliders.
+DEFINE_HOOK_SYMBOL("mDoGph_AfterOfDraw",int(),CollisionFrame);
 DEFINE_HOOK_SYMBOL("dCcS::Draw",void(dCcS*),CollisionActors);
 ModResult initCollision(){
  toggle("collision_at","Collision","attack colliders","Red attack geometry.");
@@ -48,18 +58,21 @@ ModResult initCollision(){
  number("collision_range","Collision","poly draw range:",0,1000,[](){return range;},[](int64_t v){range=int(v);});
  number("collision_raise","Collision","poly draw raise:",0,255,[](){return raise;},[](int64_t v){raise=int(v);});
  number("collision_opacity","Collision","opacity:",0,255,[](){return opacity;},[](int64_t v){opacity=int(v);});
- auto r=guardedPost<CollisionFrame>([](ModContext*,void*,void*,void*){
-  if(!playable()||!(on("collision_ground")||on("collision_roof")||on("collision_wall")))return;
-  auto* link=daAlink_getAlinkActorClass();if(!link)return;
+ auto r=guardedPre<CollisionFrame>([](ModContext*,void*,void*,void*){
+  if(!playable()||!(on("collision_ground")||on("collision_roof")||on("collision_wall")))return HOOK_CONTINUE;
+  auto* link=daAlink_getAlinkActorClass();if(!link)return HOOK_CONTINUE;
+  MainXluList list;
   cXyz base=link->current.pos;freeCameraPosition(base);
   cXyz min(base.x-range,base.y-range,base.z-range),max(base.x+range,base.y+range,base.z+range);
   dBgS_CaptPoly query;query.OnFullGrp();query.Set(min,max);
   if(on("collision_edges")){query.SetCallback(edges);capture(query);}
   query.SetCallback(faces);capture(query);
+  return HOOK_CONTINUE;
  });
  if(r!=MOD_OK)return r;
  return guardedPost<CollisionActors>([](ModContext*,void* args,void*,void*){
   if(!playable())return;
+  MainXluList list;
   auto* cc=mods::arg<dCcS*>(args,0);
   auto draw=[](auto& list,unsigned count,GXColor color){
    for(unsigned i=0;i<std::min(count,unsigned(std::size(list)));i++)if(list[i])list[i]->Draw(color);

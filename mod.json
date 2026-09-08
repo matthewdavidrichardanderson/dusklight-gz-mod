@@ -1,7 +1,7 @@
 {
   "id": "dev.dusk.gz",
   "name": "Dusk GZ",
-  "version": "0.1.23-dev",
+  "version": "0.1.28-dev",
   "author": "dusk gz contributors",
   "description": "dusk tpgz port, open with L, R, D-Pad Down."
 }

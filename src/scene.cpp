@@ -1,5 +1,6 @@
 // Native equivalents of TPGZ scene.cpp and utils/audio.cpp.
 #include "core.hpp"
+#include "actor_tools.hpp"
 #include "m_Do/m_Do_audio.h"
 #include "link_tools.hpp"
 #include "loading.hpp"
@@ -57,8 +58,8 @@ void initScene(){
 }
 void sceneTick(){
  actors.apply(g_dComIfAc_gameInfo.mPause,on("freeze_actors"),true);
- camera.apply(dComIfGp_getEventManager().mCameraPlay,on("freeze_camera")||moveLinkActive(),1);
- hud.apply(g_drawHIO.mParentAlpha,on("hide_hud")||moveLinkActive(),0.f);
+ camera.apply(dComIfGp_getEventManager().mCameraPlay,on("freeze_camera")||moveLinkActive()||actorViewActive(),1);
+ hud.apply(g_drawHIO.mParentAlpha,on("hide_hud")||moveLinkActive()||actorViewActive(),0.f);
  auto flags=fopAc_ac_c::getStopStatus();
  if(on("hide_actors")){
   if(!hidden){wasHidden=(flags&0x100)!=0;hidden=true;}

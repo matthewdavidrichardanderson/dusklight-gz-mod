@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <string_view>
 namespace gz {void shutdownTransformIndicator();void drawRngValues();void cancelComboCapture();bool comboMenuInput(std::string_view,uint16_t,uint16_t,uint16_t);bool drawComboMenu(std::string_view);bool itemWheelInput(std::string_view,uint16_t,uint16_t);bool drawItemWheel(std::string_view);bool warpMenuInput(std::string_view,uint16_t,uint16_t);bool drawWarpMenu(std::string_view);bool flagRecordsInput(std::string_view,uint16_t,uint16_t);bool drawFlagRecords(std::string_view);bool actorMenuInput(std::string_view,uint16_t,uint16_t,uint16_t);bool drawActorMenu(std::string_view);uint32_t cursorColor();void drawOverlays();bool overlaysVisible();
-void openHostMenu();void closeHostMenu();
+void closeHostMenu();
 void actorMenuUnloaded(std::string_view,bool);void flagRecordsDeleted();
 #include "menu_reference.inc"
 #include "credits.inc"
@@ -32,7 +32,7 @@ std::string_view gzCurrentPage(){return gzMenuOpen()?std::string_view(pages.back
 void closeMenu(){cancelComboCapture();if(!pages.empty())actorMenuUnloaded(pages.back().name,false);menuVisible=false;closeHostMenu();}
 void openMenu(){
  if(speedrunBlocked())return;
- if(gzMenuOpen()){closeMenu();return;}
+ if(gzMenuOpen())return; // Original GZ: the opening combo never closes the menu.
  closeHostMenu();if(pages.empty())pushPage("main");menuVisible=true;lastButtons=0;menuButtons={};openingGuard={};
 }
 static std::vector<Row> rows(){
@@ -70,7 +70,7 @@ static std::vector<Row> rows(){
  }else if(name=="settings"){
   control("advanced_mode","advanced mode");control("reload_mode","area reload behavior:");control("cursor_color","cursor color:");
   control("font","font:");control("drop_shadows","drop shadows");control("practice_swap_equips","swap equips");
-  sub("command combos","Hotkeys");sub("menu positions","Positions");control("reset_positions");sub("credits","credits");sub("developer controls","host");return out;
+  sub("command combos","Hotkeys");sub("menu positions","Positions");control("reset_positions");sub("credits","credits");return out;
  }else if(name=="tools"){
   sub("checkers","Checkers");sub("controller","controller");sub("link","link");sub("scene","tools scene");sub("timers","timers");sub("rng","RNG");return out;
  }else if(name=="RNG"){
@@ -141,7 +141,6 @@ void gzMenuInput(uint16_t buttons){
  }
  auto row=list[page.cursor];
  if((edge&0x100)&&!row.destination.empty()){
-  if(row.destination=="host"){menuVisible=false;openHostMenu();return;}
   pushPage(row.destination);return;
  }
  if(!row.control||disabled(*row.control))return;
@@ -230,5 +229,5 @@ ModResult initGzMenu(){
   }
  });
 }
-void shutdownGzMenu(){menuVisible=false;pages.clear();cursorMemory.rows.clear();menuScroll={};shutdownTransformIndicator();shutdownGzFont();shutdownForeground();}
+void shutdownGzMenu(){closeMenu();menuVisible=false;pages.clear();cursorMemory.rows.clear();menuScroll={};shutdownTransformIndicator();shutdownGzFont();shutdownForeground();}
 }

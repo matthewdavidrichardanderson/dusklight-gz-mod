@@ -2,6 +2,15 @@
 #define PROCS_DUMP_NAMES 1
 #include "f_pc/f_pc_name.h"
 #include "core.hpp"
+#include "actor_tools.hpp"
+#include "actor_motion.hpp"
+#include "link_tools.hpp"
+#include "loading.hpp"
+#include "mods/svc/camera.h"
+#include "d/d_camera.h"
+#include "d/d_menu_window.h"
+#include "d/d_meter2_info.h"
+#include "m_Do/m_Do_controller_pad.h"
 #include "gz_font.hpp"
 #include "presentation.hpp"
 #include "menu_logic.hpp"
@@ -22,6 +31,27 @@ int spawnProfile=0,spawnSubtype=-1,spawnRow=0,actorRow=0,paramDigit=0;
 u32 spawnParams=0xffffffff;
 bool editingParams=false;
 MenuButtons actorEditRepeat;
+bool viewing=false,linkLeased=false;
+fpc_ProcID viewOwner=~fpc_ProcID(0);
+u32 savedCollision=0;
+u8 savedEvent=0,savedMenu=0,savedWindow=0;
+bool savedPause=false;
+dMw_c* menuOwner=nullptr;
+cXyz savedEye(0,0,0),savedCenter(0,0,0);
+float savedFovy=45;
+s16 savedBank=0;
+ActorMotion motion;
+CameraOperatorHandle cameraHandle=0;
+constexpr u32 collisionMask=dBgS_Acch::FLAG_GRND_NONE|dBgS_Acch::FLAG_WALL_NONE|
+ dBgS_Acch::FLAG_ROOF_NONE|dBgS_Acch::FLAG_LINE_CHECK_NONE;
+void releaseLink(){
+ if(!linkLeased)return;
+ auto* link=daAlink_getAlinkActorClass();
+ if(link&&fopAcM_GetID(link)==viewOwner)
+  link->mLinkAcch.m_flags=(link->mLinkAcch.m_flags&~collisionMask)|savedCollision;
+ if(dComIfGp_getEvent()->mEventStatus==1)dComIfGp_getEvent()->mEventStatus=savedEvent;
+ linkLeased=false;
+}
 std::string profileName(int id){
  const auto* name=GetProcName(id);
  if(!name)return "mod actor";
@@ -56,11 +86,58 @@ void spawn(){
  else notify("Actor spawn failed: "+profileName(spawnProfile)+" ("+std::to_string(result)+")");
 }
 }
+bool actorViewActive(){return viewing&&!speedrunBlocked()&&!sceneLoading()&&playable()&&gzCurrentPage()=="actor list";}
+void shutdownActorView(){
+ releaseLink();
+ if(!viewing)return;
+ auto* link=daAlink_getAlinkActorClass();
+ if(!sceneLoading()&&link&&fopAcM_GetID(link)==viewOwner){
+  if(auto* camera=dCam_getBody())camera->Reset(savedCenter,savedEye,savedFovy,savedBank);
+  if(menuOwner&&g_meter2_info.getMenuWindowClass()==menuOwner){
+   if(menuOwner->mMenuProc==0)menuOwner->mMenuProc=savedMenu;
+   if(g_meter2_info.mWindowStatus==0)g_meter2_info.mWindowStatus=savedWindow;
+   if(!dComIfGp_isPauseFlag()&&savedPause)dComIfGp_onPauseFlag();
+  }
+ }
+ viewing=false;menuOwner=nullptr;
+}
+void actorViewTick(){
+ auto* link=daAlink_getAlinkActorClass();
+ if(speedrunBlocked()||sceneLoading()||!playable()||!link||gzCurrentPage()!="actor list"){
+  shutdownActorView();return;
+ }
+ if(viewing&&fopAcM_GetID(link)!=viewOwner)shutdownActorView();
+ auto* actor=selectedActor();auto* camera=dCam_getBody();
+ if(!actor||!camera){shutdownActorView();return;}
+ if(!viewing){
+  shutdownMoveLink();shutdownCamera();
+  viewOwner=fopAcM_GetID(link);
+  savedEye=camera->iEye();savedCenter=camera->iCenter();savedFovy=camera->mFovy;savedBank=camera->mBank.Val();
+  menuOwner=g_meter2_info.getMenuWindowClass();savedPause=dComIfGp_isPauseFlag();
+  if(menuOwner){
+   savedMenu=menuOwner->mMenuProc;savedWindow=g_meter2_info.mWindowStatus;
+   if(savedMenu)g_meter2_info.offMenuInForce(savedMenu);
+   menuOwner->mMenuProc=0;g_meter2_info.mWindowStatus=0;dComIfGp_offPauseFlag();
+  }
+  motion.face(actor->shape_angle.y);viewing=true;
+ }
+ if(actor==link){
+  if(!linkLeased){savedCollision=link->mLinkAcch.m_flags&collisionMask;savedEvent=dComIfGp_getEvent()->mEventStatus;linkLeased=true;}
+  link->mLinkAcch.m_flags|=collisionMask;dComIfGp_getEvent()->mEventStatus=1;
+ }else releaseLink();
+ link->speed.setall(0);
+ bool hostVisible=false;svc_ui->is_any_document_visible(mod_ctx,&hostVisible);
+ if(hostVisible)return;
+ auto* pad=mDoCPd_c::getGamePad(0);if(!pad)return;
+ const auto delta=motion.update(actor->shape_angle.y,actor->shape_angle.x,
+  pad->mMainStick.mRawX,pad->mMainStick.mRawY,pad->mSubStick.mRawX,pad->mSubStick.mRawY,u16(pad->getButton()));
+ actor->current.pos+=cXyz(delta[0],delta[1],delta[2]);
+}
 void actorMenuUnloaded(std::string_view page,bool deleted){
  // Original spawner's edit mode belongs to the recreated menu, while its
  // parameters/cursor are permanent. Inspector actor index lasts until Back.
  if(page=="actor spawner")editingParams=false;
- if(page=="actor list"){actorEditRepeat={};if(deleted)selected=~fpc_ProcID(0);}
+ if(page=="actor list"){shutdownActorView();actorEditRepeat={};if(deleted)selected=~fpc_ProcID(0);}
 }
 bool actorMenuInput(std::string_view page,uint16_t buttons,uint16_t command,uint16_t edge){
  if(page!="actor spawner"&&page!="actor list")return false;
@@ -155,9 +232,30 @@ bool drawActorMenu(std::string_view page){
  return true;
 }
 DEFINE_HOOK_SYMBOL("dDbVw_deleteDrawPacketList",void(),ActorGizmoFrame);
+DEFINE_HOOK(&daAlink_c::posMove,ActorHoldLink);
+DEFINE_HOOK_SYMBOL("dBgS_Acch::CrrPos",void(dBgS_Acch*,dBgS&),ActorGroundState);
 ModResult initActorTools(){
+ CameraOperatorDesc desc=CAMERA_OPERATOR_DESC_INIT;desc.debug_name="TPGZ actor inspector";desc.priority=20;
+ desc.operate=[](ModContext*,CameraOperatorState* state,void*){
+  if(!actorViewActive())return false;
+  auto* actor=selectedActor();if(!actor)return false;
+  const auto offset=motion.eyeOffset();
+  const auto& pos=actor->current.pos;
+  state->eye[0]=pos.x+offset[0];state->eye[1]=pos.y+offset[1];state->eye[2]=pos.z+offset[2];
+  state->center[0]=pos.x;state->center[1]=pos.y+200;state->center[2]=pos.z;
+  return true;
+ };
+ auto r=svc_camera->register_camera_operator(mod_ctx,&desc,&cameraHandle);if(r!=MOD_OK)return r;
+ r=guardedPre<ActorHoldLink>([](ModContext*,void*,void*,void*){
+  return actorViewActive()?HOOK_SKIP_ORIGINAL:HOOK_CONTINUE;
+ });if(r!=MOD_OK)return r;
+ r=guardedPost<ActorGroundState>([](ModContext*,void* args,void*,void*){
+  // GZ forces the ground-contact result during inspection. Keep native control
+  // flags intact; Link's temporary collision bypass is leased separately.
+  if(actorViewActive())mods::arg<dBgS_Acch*>(args,0)->m_flags|=dBgS_Acch::FLAG_GROUND_HIT;
+ });if(r!=MOD_OK)return r;
  return guardedPost<ActorGizmoFrame>([](ModContext*,void*,void*,void*){
-  if(gzCurrentPage()!="actor list")return;
+  if(!actorViewActive())return;
   auto* actor=selectedActor();if(!actor)return;
   cXyz size(10,10,10);csXyz rotation(0,0,0);GXColor white{255,255,255,255};
   dDbVw_drawCubeXlu(actor->current.pos,size,rotation,white);

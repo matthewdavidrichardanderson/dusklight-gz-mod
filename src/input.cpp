@@ -1,5 +1,9 @@
 // TPGZ commands and frame advance adapted to the native decomp controller/scene.
 #include "core.hpp"
+#include "dusk/ui/nav_types.hpp"
+#include <dolphin/pad.h>
+namespace Rml {class Event;}
+#include "actor_tools.hpp"
 #include "input_logic.hpp"
 #include "link_tools.hpp"
 #include "native_pose.hpp"
@@ -14,6 +18,7 @@
 namespace gz {bool comboCaptureActive();void loadGorgePractice();bool gorgePracticeEnabled();void checkerTick();void reloadArea();void reloadPractice();void toggleTimer();void resetTimer();bool gzMenuOpen();void gzMenuInput(uint16_t);
 DEFINE_HOOK(&dScnPly_c::calcPauseTimer, PauseTimer);
 DEFINE_HOOK(&mDoCPd_c::read, PadRead);
+DEFINE_HOOK_SYMBOL("dusk::ui::map_nav_event",dusk::ui::NavCommand(const Rml::Event*),ReloadMenuGuard);
 struct Combo {
  const char* id; const char* label; uint16_t defaultMask;
  ConfigVarHandle config=0; std::function<void()> fn;
@@ -106,7 +111,7 @@ ModResult initInput() {
  action("pause","Tools","Pause / resume simulation",togglePause);
  action("step","Tools","Advance one simulation frame",[](){stepRequested=true;}).available=[](){return paused;};
  combos={
-  {"combo_menu","Open / close menu",0x64,0,[]{openMenu();}},
+  {"combo_menu","Open menu",0x64,0,[]{openMenu();}},
   {"combo_store","Store position",0x28,0,storePosition,false,"teleport"},
   {"combo_load","Restore position",0x24,0,loadPosition,false,"teleport"},
   {"combo_moon","Moon jump",0x120,0,[]{if(playable())daPy_getPlayerActorClass()->speed.y=56;},true,"moon_jump"},
@@ -129,7 +134,20 @@ ModResult initInput() {
   control.help="GameCube button mask; 0 disables. Commands require exact combinations. Frame advance accepts additional gameplay buttons.";
  }
  advanceBinding=combos.back().config;
- auto r=guardedPre<PadRead>([](ModContext*,void*,void*,void*){restoreRawInput();return HOOK_CONTINUE;});
+ auto r=guardedPost<ReloadMenuGuard>([](ModContext*,void*,void* result,void*){
+  auto& command=*static_cast<dusk::ui::NavCommand*>(result);
+  if(command!=dusk::ui::NavCommand::Menu||!playable()||!on("area_reload")||gzMenuOpen()||comboCaptureActive())return;
+  bool visible=false;svc_ui->is_any_document_visible(mod_ctx,&visible);if(visible)return;
+  uint16_t reloadMask=0;
+  for(const auto& combo:combos)if(std::string_view(combo.id)=="combo_reload"){reloadMask=binding(combo.config);break;}
+  if(!reloadReservesMenu(reloadMask,reloadMask))return;
+  // UI events precede the game's pad read. Sample physical/keyboard mappings
+  // here rather than the previous simulation frame's JUTGamePad snapshot.
+  PADStatus status[PAD_MAX_CONTROLLERS]{};PADRead(status);
+  if(status[0].err==PAD_ERR_NONE&&reloadReservesMenu(status[0].button,reloadMask))
+   command=dusk::ui::NavCommand::None;
+ });if(r!=MOD_OK)return r;
+ r=guardedPre<PadRead>([](ModContext*,void*,void*,void*){restoreRawInput();return HOOK_CONTINUE;});
  if(r!=MOD_OK)return r;
  return guardedPre<PauseTimer>([](ModContext*,void*,void* ret,void*){
   if(!timerOwned)return HOOK_CONTINUE;
@@ -183,6 +201,7 @@ void inputTick() {
   advance.reset(buttons);lastSimulationButtons=buttons;
  }
 
+ actorViewTick();
  moveLinkTick();
  consume(consumed);
  if(on("turbo")&&!gzMenuOpen())mDoCPd_c::getCpadInfo(0).mPressedButtonFlags=mDoCPd_c::getCpadInfo(0).mButtonFlags;

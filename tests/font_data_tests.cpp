@@ -23,7 +23,7 @@ int main(int argc,char** argv){
   if(gz::fontPixels(decoded,std::span(blob).subspan(decoded.textureOffset)).size()!=size_t(decoded.width)*decoded.height*4)return 13;
   fonts++;
  }
- if(fonts!=7)return 8;
+ if(fonts!=8)return 8;
  gz::FontData cmpr;cmpr.format=1;cmpr.width=cmpr.height=8;
  std::vector<unsigned char> blocks(32);
  // Four 4x4 subtiles: red, green, blue, transparent midpoint.
@@ -45,6 +45,6 @@ int main(int argc,char** argv){
  gz::FontData coverage;coverage.format=3;coverage.width=8;coverage.height=4;
  std::vector<unsigned char> alpha(32,64);rgba=gz::fontPixels(coverage,alpha);
  if(rgba.size()!=128||rgba[0]!=255||rgba[1]!=255||rgba[2]!=255||rgba[3]!=64)return 14;
- std::cout<<"All seven GZ font resources decoded. ";
+ std::cout<<"All eight GZ font resources decoded. ";
  std::cout<<"HD coverage and original CMPR/I8 decoded; truncated and invalid resources rejected\n";
 }

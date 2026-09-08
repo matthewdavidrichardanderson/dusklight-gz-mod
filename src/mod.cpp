@@ -15,7 +15,7 @@ IMPORT_SERVICE(HostService,svc_host);
 IMPORT_SERVICE(CameraService,svc_camera);
 IMPORT_SERVICE(ResourceService,svc_resource);
 IMPORT_SERVICE(GfxService,svc_gfx);
-namespace gz {ModResult initProjection();ModResult initTunic();ModResult initFastMovement();ModResult initFlagLog();ModResult initTriggers();ModResult initCollision();ModResult initActorTools();ModResult installScene();ModResult initCheckers();void initOverlays();void overlayTick();ModResult initGzMenu();void shutdownGzMenu();ModResult installPractice();void shutdownInput();void initItemWheel();void initCollectibles();void initWarping();ModResult initReload();ModResult initRng();ModResult initCamera();void cameraTick();void shutdownCamera();void reloadTick();}
+namespace gz {ModResult initProjection();ModResult initTunic();ModResult initFastMovement();ModResult initFlagLog();ModResult initTriggers();ModResult initCollision();ModResult initActorTools();ModResult installScene();ModResult initCheckers();void initOverlays();ModResult installTimerHooks();void overlayTick();ModResult initGzMenu();void shutdownGzMenu();ModResult installPractice();void shutdownInput();void initItemWheel();void initCollectibles();void initWarping();ModResult initReload();ModResult initRng();ModResult initCamera();void cameraTick();void shutdownCamera();void reloadTick();}
 namespace gz {
 void initializeNativeOxygen();void resetRngForSpeedrun();void cancelPracticeForSpeedrun();void resetReloadForSpeedrun();void resetTimer();
 void suspendGz(){
@@ -44,7 +44,7 @@ MOD_EXPORT ModResult mod_initialize(ModError*) {
  r=gz::initCollision();if(r!=MOD_OK)return r;
  r=gz::initActorTools();if(r!=MOD_OK)return r;
  gz::initScene();r=gz::installScene();if(r!=MOD_OK)return r;
- gz::initOverlays();gz::initPractice();r=gz::installPractice();if(r!=MOD_OK)return r;
+ gz::initOverlays();r=gz::installTimerHooks();if(r!=MOD_OK)return r;gz::initPractice();r=gz::installPractice();if(r!=MOD_OK)return r;
  r=gz::initUi();if(r!=MOD_OK)return r;
  r=gz::initGzMenu();if(r!=MOD_OK)return r;
  gz::refresh();svc_log->info(mod_ctx,"Dusk GZ initialized");return MOD_OK;
