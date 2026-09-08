@@ -3,5 +3,69 @@
   "name": "Dusk GZ",
   "version": "0.1.31-dev",
   "author": "mdra5000",
-  "description": "dusk tpgz port, open with L, R, D-Pad Down."
+  "description": "dusk tpgz port, open with L, R, D-Pad Down.",
+  "abi": 1,
+  "imports": [
+    {
+      "service_id": "dev.twilitrealm.dusklight.actor",
+      "major": 1,
+      "min_minor": 0,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.camera",
+      "major": 1,
+      "min_minor": 1,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.config",
+      "major": 1,
+      "min_minor": 0,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.game",
+      "major": 2,
+      "min_minor": 0,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.gfx",
+      "major": 1,
+      "min_minor": 2,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.hook",
+      "major": 1,
+      "min_minor": 1,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.host",
+      "major": 2,
+      "min_minor": 2,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.log",
+      "major": 1,
+      "min_minor": 0,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.resource",
+      "major": 1,
+      "min_minor": 0,
+      "optional": false
+    },
+    {
+      "service_id": "dev.twilitrealm.dusklight.ui",
+      "major": 2,
+      "min_minor": 2,
+      "optional": false
+    }
+  ],
+  "exports": []
 }
