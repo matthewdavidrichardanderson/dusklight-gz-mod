@@ -1,0 +1,6 @@
+/build/
+/upstream/
+/test-runtime/
+*.user
+/tools/
+/docs/

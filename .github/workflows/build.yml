@@ -1,0 +1,98 @@
+name: Build desktop mods
+
+on:
+  push:
+    branches: ["*"]
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Keep this in sync with the revision recorded in NOTICE.md and
+  # the source hashes checked by CMakeLists.txt.
+  DUSKLIGHT_REVISION: bb36b652a021ed061afd48d99d30a6901656d91c
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            runner: ubuntu-latest
+          - platform: linux-aarch64
+            runner: ubuntu-24.04-arm
+          - platform: macos-arm64
+            runner: macos-latest
+          - platform: macos-x86_64
+            runner: macos-latest
+            cmake_args: -DCMAKE_OSX_ARCHITECTURES=x86_64
+          - platform: windows-amd64
+            runner: windows-latest
+            msvc_arch: amd64
+          - platform: windows-arm64
+            runner: windows-latest
+            msvc_arch: amd64_arm64
+
+    steps:
+      - name: Check out Dusk GZ
+        uses: actions/checkout@v4
+
+      - name: Check out the pinned Dusklight SDK
+        uses: actions/checkout@v4
+        with:
+          repository: TwilitRealm/dusklight
+          ref: ${{ env.DUSKLIGHT_REVISION }}
+          path: dusklight-upstream
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Enable Visual Studio environment
+        if: matrix.msvc_arch
+        uses: step-security/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      - name: Install Ninja on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: choco install ninja --no-progress --yes
+
+      - name: Configure on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          dusk_dir="$(cd dusklight-upstream && pwd)"
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DBUILD_TESTING=ON \
+            "-DDUSK_DIR=${dusk_dir}" \
+            ${{ matrix.cmake_args }}
+
+      - name: Configure on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $duskDir = (Resolve-Path -LiteralPath 'dusklight-upstream').Path
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+            -DBUILD_TESTING=ON `
+            "-DDUSK_DIR=$duskDir"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload mod package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-${{ matrix.platform }}
+          path: build/mods/*.dusk
+          if-no-files-found: error

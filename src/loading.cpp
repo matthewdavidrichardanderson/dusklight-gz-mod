@@ -1,0 +1,21 @@
+// GZ loading flag semantics via native lifecycle hooks; no private data-symbol dependency.
+#include "loading.hpp"
+#include "loading_logic.hpp"
+#include "f_op/f_op_scene_req.h"
+#include "f_op/f_op_overlap_mng.h"
+#include "SSystem/SComponent/c_phase.h"
+namespace gz {
+DEFINE_HOOK(&fopScnRq_Request,SceneRequested);
+DEFINE_HOOK_SYMBOL("fopScnRq_phase_Done",cPhs_Step(scene_request_class*),SceneFinished);
+static SceneLoadState state;
+bool sceneLoading(){return state.active;}
+void resyncLoading(){state.active=fopOvlpM_IsDoingReq()!=0;}
+ModResult initLoading(){
+ state.active=fopOvlpM_IsDoingReq()!=0;
+ auto r=guardedPost<SceneRequested>([](ModContext*,void* args,void* result,void*){
+  state.requested(*static_cast<fpc_ProcID*>(result),mods::arg<s16>(args,4));
+ });
+ if(r!=MOD_OK)return r;
+ return guardedPost<SceneFinished>([](ModContext*,void*,void*,void*){state.completed();});
+}
+}
