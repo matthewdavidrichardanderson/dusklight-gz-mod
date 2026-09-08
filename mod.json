@@ -3,7 +3,7 @@
   "name": "Dusk GZ",
   "version": "0.1.31-dev",
   "author": "mdra5000",
-  "description": "dusk tpgz port, open with L, R, D-Pad Down.",
+  "description": "dusk tpgz port\n\u00a0\nopen with L, R, D-Pad Down. all credit goes to tpgz devs",
   "abi": 1,
   "imports": [
     {

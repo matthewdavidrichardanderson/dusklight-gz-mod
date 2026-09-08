@@ -46,12 +46,10 @@ void openHostMenu() {
  d.on_closed=[](ModContext*,UiWindowHandle,void*){window=0;};
  auto r=svc_ui->window_push(mod_ctx,&d,&window);if(r!=MOD_OK)notify("Cannot open GZ menu");
 }
-// Render credits as a separate block: host descriptions collapse newlines.
+// Keep the manifest description as the single source of the displayed text.
 ModResult initUi() {
- UiModsPanelDesc panel=UI_MODS_PANEL_DESC_INIT;
- panel.build=[](ModContext*,UiElementHandle pane,void*,ModError*) {
-  return svc_ui->pane_add_text(mod_ctx,pane,"credit goes to tpgz devs",nullptr);
- };
- return svc_ui->register_mods_panel(mod_ctx,&panel);
+ UiStyleHandle style=0;
+ return svc_ui->register_styles(mod_ctx,UI_SCOPE_WINDOW,
+  "window.mods [mod-id=\"dev.dusk.gz\"] .mod-description { white-space: pre-wrap; }",&style);
 }
 }
