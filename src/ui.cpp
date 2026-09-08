@@ -46,6 +46,12 @@ void openHostMenu() {
  d.on_closed=[](ModContext*,UiWindowHandle,void*){window=0;};
  auto r=svc_ui->window_push(mod_ctx,&d,&window);if(r!=MOD_OK)notify("Cannot open GZ menu");
 }
-// GZ opens through its controller combo; no extra host panel or menu tab.
-ModResult initUi() {return MOD_OK;}
+// Render credits as a separate block: host descriptions collapse newlines.
+ModResult initUi() {
+ UiModsPanelDesc panel=UI_MODS_PANEL_DESC_INIT;
+ panel.build=[](ModContext*,UiElementHandle pane,void*,ModError*) {
+  return svc_ui->pane_add_text(mod_ctx,pane,"credit goes to tpgz devs",nullptr);
+ };
+ return svc_ui->register_mods_panel(mod_ctx,&panel);
+}
 }
