@@ -33,8 +33,5 @@ bool on(const char* id) { if(speedrunBlocked())return false; for(auto& c:control
 void refresh() {for(auto& c:controls) if(c.config) c.value=c.get()!=0;}
 void notify(const std::string& message) {
  svc_log->info(mod_ctx,message.c_str());
- UiToastDesc d=UI_TOAST_DESC_INIT;d.title_rml="Dusk GZ";std::string escaped;
- for(char c:message) {if(c=='&')escaped+="&amp;";else if(c=='<')escaped+="&lt;";else if(c=='>')escaped+="&gt;";else escaped+=c;}
- d.body_rml=escaped.c_str();svc_ui->push_toast(mod_ctx,&d);
 }
 }
