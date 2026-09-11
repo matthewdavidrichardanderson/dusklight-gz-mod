@@ -36,8 +36,11 @@ static void restorePlayer() {
 static void applyPlayer(daAlink_c* p) {
  if(!p)return;
  if(fopAcM_GetID(p)!=playerId){wallLease=invLease=false;playerId=fopAcM_GetID(p);}
+
  if(on("infinite_hearts"))dComIfGs_setLife((dComIfGs_getMaxLife()/5)*4);
- if(on("infinite_air")){dComIfGp_setOxygen(600);dComIfGp_setNowOxygen(600);}
+ // TPGZ only restores the gameplay oxygen value. The meter owns its
+ // interpolated NowOxygen value and catches up through the normal HUD path.
+ if(on("infinite_air"))dComIfGp_setOxygen(600);
  if(on("infinite_oil"))dComIfGs_setOil(21600);
  if(on("infinite_arrows"))dComIfGs_setArrowNum(99);
  if(on("infinite_slingshot"))dComIfGs_setPachinkoNum(99);
@@ -82,7 +85,7 @@ ModResult initCheats(){
  toggle("super_clawshot","Cheats","Super clawshot","TPGZ speed, range and surface attachment via decomp routines; boss-specific parameters remain unchanged.");
  toggle("unrestricted_items","Cheats","Unrestricted items","Allows item use in Castle Town, matching upstream's restriction hook.");
  toggle("transform_anywhere","Cheats","Transform anywhere","Bypasses transformation location restrictions.");
- toggle("disable_item_timer","Cheats","Disable item timer","Freezes native item lifetime timers; resumes their countdown when disabled.");
+ toggle("disable_item_timer","Cheats","Disable item timer","Gives newly spawned field items TPGZ's 0x7fff-frame wait lifetime.");
  toggle("no_sinking","Tools","No sinking in sand","Clears Link's sinking offset each simulation step.");
  auto r=guardedPre<LinkExecute>([](ModContext*,void* a,void*,void*){applyPlayer(mods::arg<daAlink_c*>(a,0));return HOOK_CONTINUE;});if(r!=MOD_OK)return r;
  r=guardedPre<CastleItems>([](ModContext*,void*,void* ret,void*){

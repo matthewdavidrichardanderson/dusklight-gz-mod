@@ -621,8 +621,9 @@ void readChainAnchors(daAlink_c* link, cXyz* anchors) {
 }
 }
 
-// Original chain geometry, spacing, twist, swing, lighting and fog; no 600-link
-// cutoff. Iron Ball continues through the native renderer.
+// Preserve the original chain presentation while respecting Dusklight's 600-draw
+// budget. Extreme Super Clawshot spans use longer rendered segments instead of
+// submitting thousands of links in one frame.
 void daAlink_c::hsChainShape_c::draw() {
     daAlink_c* alink = (daAlink_c*)getUserArea();
     J3DModelData* modelData = alink->getItemModelData();
@@ -677,6 +678,8 @@ void daAlink_c::hsChainShape_c::draw() {
             csXyz sp64(sp6C);
 
             f32 sp34 = M_PI / maxDistanceF;
+            const f32 linkStep = gz::chainRenderStep(maxDistanceF);
+            int chainLinks = 0;
 
             f32 temp_f27;
             f32 var_f26 = 0.0f;
@@ -690,17 +693,18 @@ void daAlink_c::hsChainShape_c::draw() {
 
 
 
-            while (maxDistanceF > var_f30) {
+            while (maxDistanceF > var_f30 && chainLinks < gz::kMaxRenderedChainLinks) {
                 temp_f27 = var_f28 * cM_fsin(sp34 * var_f30);
-                s16 spC = cM_atan2s(temp_f27 - var_f26, 5.0f);
+                s16 spC = cM_atan2s(temp_f27 - var_f26, linkStep);
                 sp64.x = sp6C.x + spC;
 
                 mDoMtx_stack_c::transS(sp98);
                 mDoMtx_stack_c::ZXYrotM(sp64);
 
-                static const Vec hsVec = {0.0f, 0.0f, 5.0f};
+                const Vec hsVec = {0.0f, 0.0f, linkStep};
                 mDoMtx_stack_c::multVec(&hsVec, &sp98);
 
+                mDoMtx_stack_c::scaleM(1.0f, 1.0f, linkStep / 5.0f);
                 mDoMtx_stack_c::revConcat(j3dSys.getViewMtx());
 
                 GXLoadPosMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
@@ -711,7 +715,8 @@ void daAlink_c::hsChainShape_c::draw() {
                 ANGLE_ADD_2(sp64.z, 0x3000);
 
                 var_f26 = temp_f27;
-                var_f30 += fabsf(cM_scos(spC)) * 5.0f;
+                var_f30 += fabsf(cM_scos(spC)) * linkStep;
+                chainLinks++;
 
 
             }
@@ -728,38 +733,147 @@ void daAlink_c::hsChainShape_c::draw() {
 
             sp98 = subChainTopPos;
             sp6C.set(maxDistance.atan2sY_XZ(), maxDistance.atan2sX_Z(), 0);
+            const f32 linkStep = gz::chainRenderStep(maxDistanceF);
+            int chainLinks = 0;
 
 
 
-            while (maxDistanceF > var_f30) {
+            while (maxDistanceF > var_f30 && chainLinks < gz::kMaxRenderedChainLinks) {
                 mDoMtx_stack_c::copy(j3dSys.getViewMtx());
                 mDoMtx_stack_c::transM(sp98);
                 mDoMtx_stack_c::ZXYrotM(sp6C);
+                mDoMtx_stack_c::scaleM(1.0f, 1.0f, linkStep / 5.0f);
 
                 GXLoadPosMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
                 GXLoadNrmMtxImm(mDoMtx_stack_c::get(), GX_PNMTX0);
 
                 material->getShape()->simpleDrawCache();
 
-                sp98 += maxDistance * 5.0f;
+                sp98 += maxDistance * linkStep;
                 ANGLE_ADD_2(sp6C.z, 0x3000);
-                var_f30 += 5.0f;
+                var_f30 += linkStep;
+                chainLinks++;
 
             }
         }
 
 }
 
+// TPGZ's global mMaxLength write also reaches ceiling-hook movement.
+void daAlink_c::hookshotRoofTurn() {
+    BOOL is_play_sound = false;
+    if (!dComIfGp_checkPlayerStatus0(0, 0x2000)) {
+        f32 max_rise_y = (mIronBallBgChkPos.y + 15.0f) - 1.5f;
+        f32 min_descend_y = mIronBallBgChkPos.y - 69420.0f;
+
+        if (checkInputOnR()) {
+            int stick_direction = getDirectionFromAngle(mStickAngle);
+            s16 angle = 1024.0f * mMoveValue * mMoveValue;
+            if (stick_direction == DIR_LEFT) shape_angle.y += angle;
+            else if (stick_direction == DIR_RIGHT) shape_angle.y -= angle;
+            current.angle.y = shape_angle.y;
+
+            if (stick_direction == DIR_FORWARD) {
+                current.pos.y += mpHIO->mItem.mHookshot.m.mRoofHangRiseSpeed * mStickValue;
+                if (current.pos.y > max_rise_y) current.pos.y = max_rise_y;
+                else { seStartOnlyReverbLevel(Z2SE_AL_HS_HANGING_UP); is_play_sound = true; }
+            } else if (stick_direction == DIR_BACKWARD) {
+                f32 descend_speed = mpHIO->mItem.mHookshot.m.mRoofHangDecendSpeed * mMoveValue;
+                if (checkBootsOrArmorHeavy()) descend_speed *= 1.5f;
+                current.pos.y -= descend_speed;
+                if (min_descend_y > current.pos.y) current.pos.y = min_descend_y;
+                else { seStartOnlyReverbLevel(Z2SE_AL_HS_HANGING_DOWN); is_play_sound = true; }
+            }
+        }
+
+        u8 status_dir = 0;
+        if (current.pos.y < max_rise_y) status_dir |= (u8)0x8;
+        if (current.pos.y > min_descend_y) status_dir |= (u8)0x2;
+        if (!checkEventRun()) dComIfGp_set3DStatusForce(0x78, status_dir, 0);
+    }
+
+    if (is_play_sound) {
+        if (!checkNoResetFlg3(FLG3_UNK_4)) {
+            dComIfGp_getVibration().StartQuake(1, 1, cXyz(0.0f, 1.0f, 0.0f));
+            onNoResetFlg3(FLG3_UNK_4);
+        }
+    } else {
+        cancelItemUseQuake(0);
+    }
+}
 
 namespace gz {
+static bool usesHookshotAttackBranch(daAlink_c* link) {
+ if(link->mProcID==daAlink_c::PROC_COPY_ROD_SWING)return false;
+ if(link->mProcID==daAlink_c::PROC_COPY_ROD_SUBJECT&&link->checkCopyRodTopUse())return false;
+ if(link->mProcID==daAlink_c::PROC_BOTTLE_OPEN||
+    link->mProcID==daAlink_c::PROC_GUARD_ATTACK||
+    link->mProcID==daAlink_c::PROC_FRONT_ROLL)return false;
+ return link->checkHookshotItem(link->mEquipItem);
+}
+
+// Exact native setAtCollision hookshot branch with TPGZ's non-boss values.
+static void setSuperClawshotAttack(daAlink_c* link) {
+ if (link->mItemMode == 3
+#if !PLATFORM_GCN
+     || (link->mItemMode == 0 && link->mSight.getDrawFlg())
+#endif
+     || link->mItemMode == 1)
+ {
+  f32 maxLength;
+  f32 shootSpeed;
+  if(link->checkLv7BossRoom()){
+   shootSpeed=link->mpHIO->mItem.mHookshot.m.mBossShootSpeed;
+   maxLength=link->mpHIO->mItem.mHookshot.m.mBossMaxLength;
+  }else{
+   shootSpeed=2870.0f;
+   maxLength=69420.0f;
+  }
+
+  cXyz direction;
+  f32 distance;
+  if(link->mItemMode==3){
+   direction=link->mHookshotTopPos-link->mHeldItemRootPos;
+   const f32 length=direction.abs();
+   distance=15.0f+shootSpeed;
+   if(distance+length>maxLength)distance=maxLength-length;
+   if(cLib_distanceAngleS(direction.atan2sX_Z(),link->field_0x301e)>0x4000)distance=-1.0f;
+  }else{
+   link->mRopeLinChk.Set(&link->field_0x3834,&link->mHeldItemRootPos,link);
+   distance=dComIfG_Bgsp().LineCross(&link->mRopeLinChk)?-1.0f:maxLength;
+  }
+
+  if(distance>0.0f){
+   cXyz start=link->mHookshotTopPos;
+   cXyz end=link->mHookshotTopPos+(link->mIronBallCenterPos*distance);
+   link->mRopeLinChk.Set(&start,&end,link);
+   if(dComIfG_Bgsp().LineCross(&link->mRopeLinChk))end=link->mRopeLinChk.GetCross();
+   link->mAtCps[0].SetStartEnd(start,end);
+   direction=end-start;
+   link->mAtCps[0].SetAtVec(direction);
+   dComIfG_Ccsp()->Set(&link->mAtCps[0]);
+  }else link->mAtCps[0].ResetAtHit();
+ }else link->mAtCps[0].ResetAtHit();
+}
 DEFINE_HOOK_SYMBOL("daAlink_c::setHookshotSight",void(daAlink_c*),ClawSight);
 DEFINE_HOOK_SYMBOL("daAlink_c::setHookshotPos",void(daAlink_c*),ClawPos);
 DEFINE_HOOK_SYMBOL("daAlink_c::procHookshotFly",int(daAlink_c*),ClawFly);
 DEFINE_HOOK(&daAlink_c::checkHookshotStickBG,ClawStick);
+DEFINE_HOOK(&daAlink_c::setAtCollision,ClawAtCollision);
+DEFINE_HOOK_SYMBOL("daAlink_c::hookshotRoofTurn",void(daAlink_c*),ClawRoofTurn);
 DEFINE_HOOK_SYMBOL("daAlink_c::hsChainShape_c::draw",void(daAlink_c::hsChainShape_c*),ClawChainDraw);
 DEFINE_HOOK_SYMBOL("daAlink_c::draw",int(daAlink_c*),ClawAnchorCapture);
 ModResult initClawshot(){
- void* address=nullptr;HookSymbolFlags flags{};
+ auto r=guardedPre<ClawAtCollision>([](ModContext*,void* a,void*,void*){
+  if(!on("super_clawshot"))return HOOK_CONTINUE;
+  auto* link=mods::arg<daAlink_c*>(a,0);
+  if(!link||!usesHookshotAttackBranch(link))return HOOK_CONTINUE;
+  setSuperClawshotAttack(link);return HOOK_SKIP_ORIGINAL;
+ });if(r!=MOD_OK)return r;
+ r=guardedPre<ClawRoofTurn>([](ModContext*,void* a,void*,void*){
+  if(!on("super_clawshot"))return HOOK_CONTINUE;
+  mods::arg<daAlink_c*>(a,0)->hookshotRoofTurn();return HOOK_SKIP_ORIGINAL;
+ });if(r!=MOD_OK)return r; void* address=nullptr;HookSymbolFlags flags{};
  auto resolved=svc_hook->resolve(mod_ctx,"dusk::interp::is_enabled",&address,&flags);
  if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
  chainInterpEnabled=reinterpret_cast<InterpEnabled>(address);
@@ -787,7 +901,7 @@ ModResult initClawshot(){
   if(!link||!link->checkHookshotItem(link->mEquipItem))return HOOK_CONTINUE;
   packet->daAlink_c::hsChainShape_c::draw();return HOOK_SKIP_ORIGINAL;
  });if(resolved!=MOD_OK)return resolved;
- auto r=guardedPre<ClawSight>([](ModContext*,void* a,void*,void*){
+ r=guardedPre<ClawSight>([](ModContext*,void* a,void*,void*){
   if(!on("super_clawshot"))return HOOK_CONTINUE;
   mods::arg<daAlink_c*>(a,0)->setHookshotSight();return HOOK_SKIP_ORIGINAL;
  });if(r!=MOD_OK)return r;

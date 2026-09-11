@@ -8,6 +8,9 @@ static void check(bool value,const char* message){if(!value){std::cerr<<message<
 static bool near(double a,double b){return std::abs(a-b)<0.000001;}
 int main(){
  using namespace gz;
+ check(near(chainRenderStep(2000.0f),5.0f),"Normal clawshot chains must keep native spacing");
+ check(chainRenderStep(69420.0f)>5.0f,"Super Clawshot must widen its render stride");
+ check(static_cast<int>(std::ceil(69420.0f/chainRenderStep(69420.0f)))<=kMaxRenderedChainLinks,"Super Clawshot chain draw count must be bounded");
  ChainHistory<float> chain;
  float anchors[4]={0,10,20,30}, result[4]{};
  chain.capture(anchors,1);chain.interpolate(result,.5f);
