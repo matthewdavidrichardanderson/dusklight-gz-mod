@@ -1,4 +1,4 @@
-// GZ free-camera motion with Dusk camera submission and native event control.
+// GZ free-camera motion with Dusklight camera submission and native event control.
 #include "core.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"

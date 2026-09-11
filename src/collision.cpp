@@ -43,7 +43,7 @@ void capture(dBgS_CaptPoly& query){
 u8 geometryOpacity(){return u8(opacity);}
 void setGeometryOpacity(int v){opacity=v;}
 // GZ appends polygons after the preceding actor draw, before painting it.
-// Dusk separates presentation: append at the end of packet collection instead.
+// Dusklight separates presentation: append at the end of packet collection instead.
 // entryImm prepends, so faces/edges render before depth-writing colliders.
 DEFINE_HOOK_SYMBOL("mDoGph_AfterOfDraw",int(),CollisionFrame);
 DEFINE_HOOK_SYMBOL("dCcS::Draw",void(dCcS*),CollisionActors);

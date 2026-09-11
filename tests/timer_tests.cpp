@@ -20,5 +20,5 @@ int main(){
  t.advance(3,90,750,true,true);if(t.loads||t.igt)return 8;
  t.advance(0,0,0,false,true);if(t.loads!=750||t.igt)return 9;
  t.advance(1,30,1000,false,false,false,true);if(t.igt!=1000||t.loads!=750)return 10;
- std::cout<<"Independent GZ controls, Dusk clock ticks, load exclusion and reset verified\n";
+ std::cout<<"Independent GZ controls, Dusklight clock ticks, load exclusion and reset verified\n";
 }

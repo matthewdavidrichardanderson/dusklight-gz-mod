@@ -1,4 +1,4 @@
-// Uses real native stage classes and copied native setter bodies, without launching/linking Dusk.
+// Uses real native stage classes and copied native setter bodies, without launching/linking Dusklight.
 #include "helpers/string.hpp"
 #include "d/d_stage.h"
 #include "practice_load_sequence.hpp"

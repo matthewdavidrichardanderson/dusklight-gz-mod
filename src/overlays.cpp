@@ -51,7 +51,7 @@ ModResult installTimerHooks(){
   sampleTimers();timerLoading=true;
  });if(r!=MOD_OK)return r;
  return guardedPost<TimerLoadEnd>([](ModContext*,void*,void* result,void*){
-  // Deletion can take multiple attempts; Dusk resumes only on success.
+  // Deletion can take multiple attempts; Dusklight resumes only on success.
   if(*static_cast<int*>(result)!=cPhs_NEXT_e)return;
   sampleTimers();timerLoading=false;sampleTimers();
  });
@@ -59,8 +59,8 @@ ModResult installTimerHooks(){
 void initOverlays(){
  toggle("heap_debug","Tools","Heap debug info","Show native Zelda, Game and Archive heap free / total free sizes.");
  toggle("transform_indicator","Tools","Transform indicator","Shows the destination form; dimmed when native Midna transformation conditions are not met.");
- toggle("igt_timer","Tools","IGT timer","Dusk game-clock timing, excluding overlap/fade loads. Independent Z+A / Z+B controls.");
- toggle("load_timer","Tools","Load timer","Accumulates overlap/fade loads using the Dusk game clock; Z+B resets all GZ timers.");
+ toggle("igt_timer","Tools","IGT timer","Dusklight game-clock timing, excluding overlap/fade loads. Independent Z+A / Z+B controls.");
+ toggle("load_timer","Tools","Load timer","Accumulates overlap/fade loads using the Dusklight game clock; Z+B resets all GZ timers.");
  toggle("timer","Tools","Timer","RTA stopwatch and logical frame count. Z + A starts/stops; Z + B resets.");
  toggle("input_viewer","Tools","Input viewer","Original GZ controller diagram, analog sticks and triggers, and raw axis values.");
  toggle("stage_info","Tools","Stage info","Current and saved stage, room, spawn point and layer.");

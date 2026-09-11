@@ -51,7 +51,7 @@ ModResult initRng() {
   if(!available)return;writeState(presets[selectedPreset].state);freeze.set(1);
  });
  if(!available){
-  for(size_t i=first;i<controls.size();i++)controls[i].reason="The current Dusk symbol manifest could not resolve all three native RNG data symbols.";
+  for(size_t i=first;i<controls.size();i++)controls[i].reason="The current Dusklight symbol manifest could not resolve all three native RNG data symbols.";
   return MOD_OK;
  }
  return guardedPre<RngProcess>([](ModContext*,void*,void*,void*){

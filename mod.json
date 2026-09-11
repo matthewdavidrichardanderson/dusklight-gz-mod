@@ -1,9 +1,9 @@
 {
-  "id": "dev.dusk.gz",
-  "name": "Dusk GZ",
-  "version": "0.1.31-dev",
+  "id": "dev.dusklight.gz",
+  "name": "Dusklight GZ",
+  "version": "0.1.31",
   "author": "mdra5000",
-  "description": "dusk tpgz port\n\u00a0\nopen with L, R, D-Pad Down. all credit goes to tpgz devs",
+  "description": "Unofficial Dusklight port of tpgz. Open with L, R and D-Pad Down",
   "abi": 1,
   "imports": [
     {

@@ -8,7 +8,7 @@ struct PracticeTimers {
  uint64_t frames=0;
  bool rtaStarted=false,igtStarted=false;
  // Wall time belongs to RTA only. IGT/load values stay in OSGetTime ticks,
- // using Dusk's game clock and overlap-process load boundaries.
+ // using Dusklight's game clock and overlap-process load boundaries.
  void advance(double seconds,uint32_t logicalFrames,int64_t gameTicks,bool loading,bool trackLoads,bool trackRta=true,bool trackIgt=true){
   if(seconds<0||gameTicks<0)return;
   if(!trackRta)rtaStarted=false;

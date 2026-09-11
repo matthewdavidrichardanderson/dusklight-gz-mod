@@ -40,7 +40,7 @@ jobs:
             msvc_arch: amd64_arm64
 
     steps:
-      - name: Check out Dusk GZ
+      - name: Check out Dusklight GZ
         uses: actions/checkout@v4
 
       - name: Check out the pinned Dusklight SDK
@@ -67,22 +67,22 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          dusk_dir="$(cd dusklight-upstream && pwd)"
+          dusklight_dir="$(cd dusklight-upstream && pwd)"
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DBUILD_TESTING=ON \
-            "-DDUSK_DIR=${dusk_dir}" \
+            "-DDUSK_DIR=${dusklight_dir}" \
             ${{ matrix.cmake_args }}
 
       - name: Configure on Windows
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          $duskDir = (Resolve-Path -LiteralPath 'dusklight-upstream').Path
+          $dusklightDir = (Resolve-Path -LiteralPath 'dusklight-upstream').Path
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=RelWithDebInfo `
             -DBUILD_TESTING=ON `
-            "-DDUSK_DIR=$duskDir"
+            "-DDUSK_DIR=$dusklightDir"
 
       - name: Build
         run: cmake --build build --parallel

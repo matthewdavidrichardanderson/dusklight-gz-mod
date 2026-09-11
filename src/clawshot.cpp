@@ -2,7 +2,7 @@
  * Adapted from upstream TP decomp routines in d_a_alink_hook.inc.
  * Only used while Super Clawshot is enabled. Original routines are untouched otherwise.
  * TPGZ's four HIO values are changed in a local copy, preserving boss-specific values.
- * No writable-const tricks or Dusk cheat settings.
+ * No writable-const tricks or Dusklight cheat settings.
  */
 #include "core.hpp"
 #include "clawshot_chain.hpp"

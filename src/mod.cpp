@@ -47,7 +47,7 @@ MOD_EXPORT ModResult mod_initialize(ModError*) {
  gz::initOverlays();r=gz::installTimerHooks();if(r!=MOD_OK)return r;gz::initPractice();r=gz::installPractice();if(r!=MOD_OK)return r;
  r=gz::initUi();if(r!=MOD_OK)return r;
  r=gz::initGzMenu();if(r!=MOD_OK)return r;
- gz::refresh();svc_log->info(mod_ctx,"Dusk GZ initialized");return MOD_OK;
+ gz::refresh();svc_log->info(mod_ctx,"Dusklight GZ initialized");return MOD_OK;
 }
 MOD_EXPORT ModResult mod_update(ModError*) {gz::speedrunTick();if(gz::speedrunBlocked())return MOD_OK;gz::refresh();gz::initializeNativeOxygen();gz::practiceTick();gz::reloadTick();gz::overlayTick();gz::inputTick();gz::cameraTick();gz::sceneTick();gz::cheatTick();return MOD_OK;}
 MOD_EXPORT ModResult mod_shutdown(ModError*) {gz::shutdownGzMenu();gz::shutdownMoveLink();gz::shutdownCamera();gz::shutdownScene();gz::shutdownInput();gz::shutdownCheats();return MOD_OK;}

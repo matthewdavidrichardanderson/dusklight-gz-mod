@@ -52,7 +52,7 @@ void initFlags() {
  choice("rupee_first_get","Flags","Rupee first-get flags",{"Clear all","Mark all obtained"},
   [](){for(int i=dItemNo_BLUE_RUPEE_e;i<=dItemNo_SILVER_RUPEE_e;i++)if(dComIfGs_isItemFirstBit(i))return 1;return 0;},
   [](int64_t v){for(int i=dItemNo_BLUE_RUPEE_e;i<=dItemNo_SILVER_RUPEE_e;i++){if(v)dComIfGs_onItemFirstBit(i);else dComIfGs_offItemFirstBit(i);}})
-  .help="Matches GZ's blue-through-silver first-get flags. Dusk's cutscene preferences remain active.";
+  .help="Matches GZ's blue-through-silver first-get flags. Dusklight's cutscene preferences remain active.";
 
  static int region=1;
  choice("map_region","Portals","Region",{"Ordon","Faron","Eldin","Lanayru","Desert","Snowpeak"},

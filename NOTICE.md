@@ -2,7 +2,7 @@
 
 ## TPGZ
 
-Dusk GZ is a native port and adaptation of [TPGZ](https://github.com/bdamja/tpgz/), using the [`1.2.0-dev` revision](https://github.com/bdamja/tpgz/tree/1.2.0-dev) at commit `f8a29de6e3e20664e6b16ae37caf066f5922c64d`.
+Dusklight GZ is a native port and adaptation of [TPGZ](https://github.com/bdamja/tpgz/), using the [`1.2.0-dev` revision](https://github.com/bdamja/tpgz/tree/1.2.0-dev) at commit `f8a29de6e3e20664e6b16ae37caf066f5922c64d`.
 
 The [TPGZ project documentation](https://wiki.tprandomizer.com/index.php?title=Practice_Rom#Main_Contributors) and the pinned source’s credits screen identify the main contributors as [MidKight (Cristobal Hall-Ramos)](https://github.com/hallcristobal), [Pheenoh](https://github.com/Pheenoh), [Taka](https://github.com/TakaRikka), and [kipcode66](https://github.com/kipcode66). The original TPGZ credits also acknowledge the TP decomp team, the TP speedrun community, and additional contributors. TPGZ-derived and adapted code is licensed under the GNU GPL v3.0; see [`LICENSE`](LICENSE) and [`res/COPYING.md`](res/COPYING.md).
 

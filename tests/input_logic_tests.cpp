@@ -12,9 +12,9 @@ int main(){
  check(comboTriggered(0x64,0,0x64),"Released and pressed combo can retrigger");
  check(reloadReservesMenu(0x1060,0x1160),"L+R+Start must reserve reload before A is pressed");
  check(reloadReservesMenu(0x1160,0x1160),"Full reload must suppress the host menu");
- check(!reloadReservesMenu(0x1020,0x1160),"Ordinary R+Start must still open Dusk");
+ check(!reloadReservesMenu(0x1020,0x1160),"Ordinary R+Start must still open Dusklight");
  check(!reloadReservesMenu(0x1160,0),"Disabled reload binding must not reserve input");
- check(!reloadReservesMenu(0x1160,0x160),"Rebound reload without Start must not block Dusk");
+ check(!reloadReservesMenu(0x1160,0x160),"Rebound reload without Start must not block Dusklight");
  check(!reloadReservesMenu(0x1060,0x1560)&&reloadReservesMenu(0x1460,0x1560),"Custom reload modifiers must be respected");
  FrameAdvance f;
  check(f.update(0x20,0x20),"First R press advances once");

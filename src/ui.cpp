@@ -50,6 +50,6 @@ void openHostMenu() {
 ModResult initUi() {
  UiStyleHandle style=0;
  return svc_ui->register_styles(mod_ctx,UI_SCOPE_WINDOW,
-  "window.mods [mod-id=\"dev.dusk.gz\"] .mod-description { white-space: pre-wrap; }",&style);
+  "window.mods [mod-id=\"dev.dusklight.gz\"] .mod-description { white-space: pre-wrap; }",&style);
 }
 }
