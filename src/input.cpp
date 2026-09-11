@@ -165,6 +165,7 @@ void inputTick() {
  uint16_t consumed=0;
  const bool wasPaused=paused;
  const bool wasMenu=gzMenuOpen();visible=visible||wasMenu;
+ bool openedMenuThisFrame=false;
  for(auto& c:combos) {
   if(comboCaptureActive())break;
   const auto mask=binding(c.config);
@@ -178,11 +179,18 @@ void inputTick() {
    else if(!playable()||!on(c.enabled))continue;
   }
   if(visible&&std::string_view(c.id)!="combo_menu")continue;
-  if(c.held||comboTriggered(buttons,previous,mask))c.fn();
+  if(c.held||comboTriggered(buttons,previous,mask)) {
+   if(std::string_view(c.id)=="combo_menu"&&!wasMenu)openedMenuThisFrame=true;
+   c.fn();
+  }
   consumed|=mask;break;
  }
  if(wasMenu&&!consumed)gzMenuInput(buttons);
- if(wasMenu||gzMenuOpen())consumed=0xffff;
+ // Upstream opens the menu after its normal gameplay controller read. Keep
+ // the opening chord available to the game on that one frame; suppress all
+ // input on later frames while the menu is open.
+ if((wasMenu||gzMenuOpen())&&!openedMenuThisFrame)consumed=0xffff;
+ if(openedMenuThisFrame)consumed=0;
  if(paused) {
   if(!wasPaused){advance.reset(buttons);lastSimulationButtons=buttons;}
   const auto mask=binding(advanceBinding);
