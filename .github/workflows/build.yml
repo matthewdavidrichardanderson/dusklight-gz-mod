@@ -13,7 +13,7 @@ permissions:
 env:
   # Keep this in sync with the revision recorded in NOTICE.md and
   # the source hashes checked by CMakeLists.txt.
-  DUSKLIGHT_REVISION: bb36b652a021ed061afd48d99d30a6901656d91c
+  DUSKLIGHT_REVISION: d34226ad1dcd261dcb738d27daa808bcf81e44dd
 
 jobs:
   build:
