@@ -6,6 +6,9 @@
  */
 #include "core.hpp"
 #include "clawshot_chain.hpp"
+#include "upstream_samples.hpp"
+#include "dusk/game_clock.h"
+#include "dusk/interp/lerp.h"
 #include <cmath>
 #include "d/actor/d_a_alink.h"
 #include "d/actor/d_a_obj_swhang.h"
@@ -610,7 +613,23 @@ using SimSequence = uint64_t(*)();
 InterpEnabled chainInterpEnabled = nullptr;
 InterpStep chainInterpStep = nullptr;
 SimSequence chainSimSequence = nullptr;
-gz::ChainHistory<cXyz> chainHistory;
+InterpEnabled chainShouldCapture = nullptr;
+InterpEnabled chainPresentationActive = nullptr;
+const dusk::game_clock::FrameTiming* chainFrameTiming = nullptr;
+struct ChainClock {
+    static bool should_capture() { return chainShouldCapture(); }
+    static bool is_enabled() { return chainInterpEnabled(); }
+    static bool is_presentation_active() { return chainPresentationActive(); }
+    static uint64_t sim_tick_seq() { return chainSimSequence(); }
+    static uint64_t presentation_epoch() { return chainFrameTiming->presentationEpoch; }
+    static float get_interpolation_step() { return chainInterpStep(); }
+};
+struct ChainLerp {
+    void operator()(cXyz& out, const cXyz& previous, const cXyz& current, float step) const {
+        dusk::interp::lerp(out, previous, current, step);
+    }
+};
+gz::upstream::Samples<cXyz, ChainClock, ChainLerp> chainHistory;
 cXyz chainAnchors[4];
 fpc_ProcID chainOwner = ~fpc_ProcID(0);
 void readChainAnchors(daAlink_c* link, cXyz* anchors) {
@@ -656,7 +675,7 @@ void daAlink_c::hsChainShape_c::draw() {
     cXyz anchors[4];
     readChainAnchors(alink, anchors);
     if (chainOwner == fopAcM_GetID(alink) && chainInterpEnabled()) {
-        chainHistory.interpolate(anchors, chainInterpStep());
+        for (int i = 0; i < 4; ++i) anchors[i] = chainHistory.read(i, anchors[i]);
     }
         const cXyz& chainRootPos = anchors[1];
         const cXyz& chainTopPos = anchors[0];
@@ -883,6 +902,20 @@ ModResult initClawshot(){
  resolved=svc_hook->resolve(mod_ctx,"dusk::interp::sim_tick_seq",&address,&flags);
  if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
  chainSimSequence=reinterpret_cast<SimSequence>(address);
+ resolved=svc_hook->resolve(mod_ctx,"dusk::interp::should_capture",&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
+ chainShouldCapture=reinterpret_cast<InterpEnabled>(address);
+ resolved=svc_hook->resolve(mod_ctx,"dusk::interp::is_presentation_active",&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
+ chainPresentationActive=reinterpret_cast<InterpEnabled>(address);
+#if defined(_MSC_VER)
+ constexpr auto timingSymbol="?g_frameTiming@game_clock@dusk@@3UFrameTiming@12@A";
+#else
+ constexpr auto timingSymbol="_ZN4dusk10game_clock13g_frameTimingE";
+#endif
+ resolved=svc_hook->resolve(mod_ctx,timingSymbol,&address,&flags);
+ if(resolved!=MOD_OK||!address||!(flags&HOOK_SYMBOL_DATA))return MOD_UNAVAILABLE;
+ chainFrameTiming=static_cast<const dusk::game_clock::FrameTiming*>(address);
  // This observer also clears history while suspended; it never changes game state.
  resolved=mods::hook::add_post<ClawAnchorCapture>([](ModContext*,void* a,void*,void*){
   auto* link=mods::arg<daAlink_c*>(a,0);
@@ -892,7 +925,7 @@ ModResult initClawshot(){
   const auto owner=fopAcM_GetID(link);
   if(owner!=chainOwner){chainHistory.reset();chainOwner=owner;}
   readChainAnchors(link,chainAnchors);
-  chainHistory.capture(chainAnchors,chainSimSequence());
+  chainHistory.capture(chainAnchors,4);
  });if(resolved!=MOD_OK)return resolved;
  resolved=guardedPre<ClawChainDraw>([](ModContext*,void* a,void*,void*){
   if(!on("super_clawshot"))return HOOK_CONTINUE;

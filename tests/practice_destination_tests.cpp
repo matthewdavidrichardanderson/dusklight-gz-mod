@@ -10,6 +10,7 @@ void SafeStringCopy(char* dst,size_t size,const char* src){
  std::memcpy(dst,src,std::strlen(src)+1);
 }
 extern "C" void GXDestroyTexObj(GXTexObj*){}
+extern "C" void GXDestroyTlutObj(GXTlutObj*){}
 namespace mDoRst {void onReset(){std::abort();}}
 #include "native_stage_setters.inc"
 int main(){
