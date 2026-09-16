@@ -167,7 +167,7 @@ static void drawMenu(){
  auto list=rows();auto& page=pages.back();
  const float x=spritePosition(Menu).x;
  const float y=spritePosition(Menu).y;
- drawGzText("tpgz v1.2.0-dev",x+35,25,cursorColor());
+ drawGzText("tpgz v1.2.4",x+35,25,cursorColor());
  const auto icon=foregroundResourceTexture("tex/tpgz.tex");
  if(icon)foregroundQuad(icon,x,5,x+30,35,0,0,1,1,0xffffffff);
  if(page.name=="RNG")drawRngValues();
