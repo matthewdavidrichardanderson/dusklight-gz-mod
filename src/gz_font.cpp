@@ -9,7 +9,7 @@
 #include <vector>
 namespace gz {
 struct Font{FontData data;uint64_t texture=0;};
-static std::array<Font,10> fonts;
+static std::array<Font,11> fonts;
 static int loadedFont=-1;
 static bool drawing=false;
 static std::vector<std::array<float,2>> vertices;
@@ -18,7 +18,7 @@ static unsigned primitive=0,lineWidth=16;
 ModResult initGzFont(){
  const int next=fontChoice();if(fonts[next].texture){loadedFont=next;return MOD_OK;}
  ResourceBuffer buffer=RESOURCE_BUFFER_INIT;
- static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans","triforce","papyrus"};
+ static const char* names[]={"consola","calamity-bold","lib-sans","lib-sans-bold","lib-serif","lib-serif-bold","press-start-2p","comic-sans","triforce","papyrus","rodin-pro-b"};
  const auto path=std::string("fonts/")+names[next]+".fnt";
  auto r=svc_resource->load(mod_ctx,path.c_str(),&buffer);if(r!=MOD_OK)return r;
  FontData data;std::span bytes(static_cast<const unsigned char*>(buffer.data),buffer.size);

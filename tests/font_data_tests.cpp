@@ -23,7 +23,7 @@ int main(int argc,char** argv){
   if(gz::fontPixels(decoded,std::span(blob).subspan(decoded.textureOffset)).size()!=size_t(decoded.width)*decoded.height*4)return 13;
   fonts++;
  }
- if(fonts!=10)return 8;
+ if(fonts!=11)return 8;
  gz::FontData cmpr;cmpr.format=1;cmpr.width=cmpr.height=8;
  std::vector<unsigned char> blocks(32);
  // Four 4x4 subtiles: red, green, blue, transparent midpoint.
