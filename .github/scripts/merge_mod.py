@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """Merge per-platform .dusk bundles into one multi-platform bundle.
 
-Each input bundle contains the same authored mod content plus its platform's native libraries
-under lib/<platform>/. Platform builds may embed different generated ABI metadata in mod.json.
-This compares the authored manifest fields, merges the lib/ trees, verifies that every native
-library declares the same mod ABI and service imports/exports (symgen modmeta --check), embeds
-that verified metadata into the bundle's mod.json (--update-json), and writes a deterministic zip.
+Each input bundle contains the same mod content plus its platform's native libraries under
+lib/<platform>/. This merges the lib/ trees, verifies that every native library declares the
+same mod ABI and service imports/exports (symgen modmeta --check), embeds that verified
+metadata into the bundle's mod.json (--update-json), and writes a deterministic zip.
 
 Usage: merge_mod.py -o combined.dusk [--symgen path] input.dusk...
 """
 
 import argparse
 import hashlib
-import json
 import subprocess
 import sys
 import tempfile
@@ -20,7 +18,6 @@ import zipfile
 from pathlib import Path
 
 MOD_LIB_NAMES = ("mod.so", "mod.dll")
-GENERATED_MANIFEST_FIELDS = frozenset(("abi", "imports", "exports"))
 
 
 def fail(message: str) -> None:
@@ -36,19 +33,6 @@ def entry_names(archive: zipfile.ZipFile) -> list[str]:
     return names
 
 
-def authored_manifest(archive: zipfile.ZipFile, path: Path) -> dict:
-    try:
-        manifest = json.loads(archive.read("mod.json"))
-    except KeyError:
-        fail(f"bundle contains no mod.json: {path}")
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        fail(f"invalid mod.json in {path}: {error}")
-    if not isinstance(manifest, dict):
-        fail(f"mod.json in {path} must contain a JSON object")
-    return {key: value for key, value in manifest.items()
-            if key not in GENERATED_MANIFEST_FIELDS}
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("inputs", nargs="+", type=Path, help="per-platform .dusk bundles")
@@ -56,36 +40,23 @@ def main() -> None:
     parser.add_argument("--symgen", default="symgen", help="path to the symgen executable")
     args = parser.parse_args()
 
-    # Generated ABI fields in mod.json are validated from all native binaries below. Everything
-    # authored in mod.json, and every other non-lib file, must match between platform packages.
+    # Collect entries: non-lib content must be identical everywhere; lib/<platform>/ trees
+    # must come from exactly one input each.
     content_hashes: dict[str, tuple[str, Path]] = {}
     platform_sources: dict[str, Path] = {}
     archives: list[zipfile.ZipFile] = []
-    canonical_manifest: dict | None = None
-    manifest_source: Path | None = None
     for path in args.inputs:
         if not path.is_file():
             fail(f"input does not exist: {path}")
         archive = zipfile.ZipFile(path)
         archives.append(archive)
-        names = entry_names(archive)
-        manifest = authored_manifest(archive, path)
-        if canonical_manifest is None:
-            canonical_manifest = manifest
-            manifest_source = path
-        elif manifest != canonical_manifest:
-            fail(f"authored fields in 'mod.json' differ between {manifest_source} and {path}; "
-                 "bundles must be built from the same source")
-
         platforms = set()
-        for name in names:
+        for name in entry_names(archive):
             if name.startswith("lib/"):
                 parts = name.split("/")
                 if len(parts) < 3 or not parts[1]:
                     fail(f"unexpected lib entry in {path}: {name}")
                 platforms.add(parts[1])
-                continue
-            if name == "mod.json":
                 continue
             digest = hashlib.sha256(archive.read(name)).hexdigest()
             seen = content_hashes.get(name)
@@ -102,7 +73,7 @@ def main() -> None:
                      f"{platform_sources[platform]} and {path}")
             platform_sources[platform] = path
 
-    if canonical_manifest is None:
+    if "mod.json" not in content_hashes:
         fail("bundles contain no mod.json")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -113,11 +84,6 @@ def main() -> None:
         for archive in archives:
             archive.extractall(stage, members=[n for n in entry_names(archive)
                                                if n.startswith("lib/")])
-
-        # Discard per-platform generated metadata. The single cross-platform symgen invocation
-        # below validates every binary together and writes the canonical metadata back.
-        (stage / "mod.json").write_text(
-            json.dumps(canonical_manifest, indent=2) + "\n", encoding="utf-8")
 
         mod_libs = []
         for platform in sorted(platform_sources):
