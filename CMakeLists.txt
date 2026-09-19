@@ -61,14 +61,14 @@ else()
     set(DUSK_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 add_mod(dusklight_gz FEATURES game webgpu
-    SOURCES src/speedrun_guard.cpp src/projection.cpp src/tunic.cpp src/link_movement.cpp src/transform_indicator.cpp src/combo_menu.cpp src/flag_log.cpp src/flag_records.cpp src/triggers.cpp src/collision.cpp src/mod.cpp src/actor_tools.cpp src/scene.cpp src/core.cpp src/ui.cpp src/cheats.cpp src/input.cpp
+    SOURCES src/speedrun_guard.cpp src/interpolation.cpp src/projection.cpp src/tunic.cpp src/link_movement.cpp src/transform_indicator.cpp src/combo_menu.cpp src/flag_log.cpp src/flag_records.cpp src/triggers.cpp src/collision.cpp src/mod.cpp src/actor_tools.cpp src/scene.cpp src/core.cpp src/ui.cpp src/cheats.cpp src/input.cpp
             src/enemy_damage.cpp src/item_lifetime.cpp src/clawshot.cpp src/inventory.cpp src/item_wheel.cpp src/reload.cpp src/collectibles.cpp src/flags.cpp src/rng.cpp src/camera.cpp src/warping.cpp src/practice.cpp src/gz_font.cpp src/foreground.cpp src/gz_menu.cpp src/overlays.cpp src/input_viewer.cpp src/presentation.cpp src/link_debug.cpp src/loading.cpp src/link_tools.cpp src/checkers.cpp
     MOD_JSON mod.json RES_DIR res BUNDLE)
 # Keep local build paths out of the distributed DLL debug-directory record.
 if(MSVC)
  target_link_options(dusklight_gz PRIVATE "/PDBALTPATH:dusklight_gz.pdb")
 endif()
-set_source_files_properties(src/link_movement.cpp src/input.cpp src/clawshot.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
+set_source_files_properties(src/link_movement.cpp src/input.cpp src/clawshot.cpp src/interpolation.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
 if(PROJECT_IS_TOP_LEVEL)
  include(CTest)
 endif()

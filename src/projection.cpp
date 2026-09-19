@@ -3,6 +3,7 @@
 // native query caches and the shared matrix stack as well as the player pose.
 #include "core.hpp"
 #include "loading.hpp"
+#include "interpolation.hpp"
 #include "d/actor/d_a_alink.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_debug_viewer.h"
@@ -19,6 +20,8 @@ DEFINE_HOOK_SYMBOL("dDbVw_deleteDrawPacketList",void(),ProjectionDraw);
 static bool projecting=false,ljaValid=false,midnaValid=false,ljaGot=false;
 static unsigned actorId=~0u;
 static std::array<cXyz,40> lja,midna;
+static PositionSamples ljaHistory,midnaHistory;
+static unsigned historyActorId=~0u;
 struct PredictionScope {
  Restore state;
  PredictionScope(daAlink_c* p){
@@ -44,6 +47,7 @@ static bool ljaAction(const daAlink_c* p){return p->mProcID==daAlink_c::PROC_ATN
 static bool midnaAction(const daAlink_c* p){return p->mProcID==daAlink_c::PROC_WOLF_ROLL_ATTACK_MOVE||p->mProcID==daAlink_c::PROC_WOLF_LOCK_ATTACK||p->mProcID==daAlink_c::PROC_WOLF_LOCK_ATTACK_TURN;}
 static void predict(daAlink_c* p){
  ljaValid=midnaValid=false;actorId=fopAcM_GetID(p);
+ if(actorId!=historyActorId){ljaHistory.reset();midnaHistory.reset();historyActorId=actorId;}
  if(on("lja_projection")&&ljaAction(p)&&p->mTargetedActor){
   PredictionScope restore(p);
   if(p->mProcID==daAlink_c::PROC_ATN_ACTOR_WAIT){
@@ -52,6 +56,7 @@ static void predict(daAlink_c* p){
   ljaGot=false;
   for(auto& position:lja){ljaGot|=p->mNormalSpeed>70;ProjectionMove::g_orig(p);position=p->current.pos;}
   ljaValid=true;
+  ljaHistory.capture(lja.data(),int(lja.size()));
  }else if(on("midna_projection")&&midnaAction(p)&&p->mWolfLockNum){
   PredictionScope restore(p);
   if(p->mProcID==daAlink_c::PROC_WOLF_ROLL_ATTACK_MOVE){
@@ -68,7 +73,10 @@ static void predict(daAlink_c* p){
   }
   for(auto& position:midna){ProjectionMove::g_orig(p);position=p->current.pos;}
   midnaValid=true;
+  midnaHistory.capture(midna.data(),int(midna.size()));
  }
+ if(!ljaValid)ljaHistory.reset();
+ if(!midnaValid)midnaHistory.reset();
 }
 ModResult initProjection(){
  toggle("lja_projection","Projection","LJA","Display the projected jump-attack path; green above 70 speed.");
@@ -86,10 +94,19 @@ ModResult initProjection(){
   if(!p||sceneLoading()||fopAcM_GetID(p)!=actorId)return;
   if(ljaValid&&on("lja_projection")&&ljaAction(p)&&p->mTargetedActor){
    const GXColor color=ljaGot?GXColor{0,255,0,u8(geometryOpacity())}:GXColor{255,0,0,u8(geometryOpacity())};
-   for(unsigned i=1;i<lja.size();i++)dDbVw_drawLineXlu(lja[i-1],lja[i],color,1,20);
+   for(unsigned i=1;i<lja.size();i++){
+    cXyz a=ljaHistory.read(int(i-1),lja[i-1]);
+    cXyz b=ljaHistory.read(int(i),lja[i]);
+    dDbVw_drawLineXlu(a,b,color,1,20);
+   }
   }
-  if(midnaValid&&on("midna_projection")&&midnaAction(p)&&p->mWolfLockNum)
-   for(unsigned i=1;i<midna.size();i++)dDbVw_drawLineXlu(midna[i-1],midna[i],{255,0,0,u8(geometryOpacity())},1,40);
+  if(midnaValid&&on("midna_projection")&&midnaAction(p)&&p->mWolfLockNum){
+   for(unsigned i=1;i<midna.size();i++){
+    cXyz a=midnaHistory.read(int(i-1),midna[i-1]);
+    cXyz b=midnaHistory.read(int(i),midna[i]);
+    dDbVw_drawLineXlu(a,b,{255,0,0,u8(geometryOpacity())},1,40);
+   }
+  }
  });
 }
 }

@@ -15,7 +15,7 @@ IMPORT_SERVICE(HostService,svc_host);
 IMPORT_SERVICE(CameraService,svc_camera);
 IMPORT_SERVICE(ResourceService,svc_resource);
 IMPORT_SERVICE(GfxService,svc_gfx);
-namespace gz {ModResult initProjection();ModResult initTunic();ModResult initFastMovement();ModResult initFlagLog();ModResult initTriggers();ModResult initCollision();ModResult initActorTools();ModResult installScene();ModResult initCheckers();void initOverlays();ModResult installTimerHooks();void overlayTick();ModResult initGzMenu();void shutdownGzMenu();ModResult installPractice();void shutdownInput();void initItemWheel();void initCollectibles();void initWarping();ModResult initReload();ModResult initRng();ModResult initCamera();void cameraTick();void shutdownCamera();void reloadTick();}
+namespace gz {ModResult initInterpolation();ModResult initProjection();ModResult initTunic();ModResult initFastMovement();ModResult initFlagLog();ModResult initTriggers();ModResult initCollision();ModResult initActorTools();ModResult installScene();ModResult initCheckers();void initOverlays();ModResult installTimerHooks();void overlayTick();ModResult initGzMenu();void shutdownGzMenu();ModResult installPractice();void shutdownInput();void initItemWheel();void initCollectibles();void initWarping();ModResult initReload();ModResult initRng();ModResult initCamera();void cameraTick();void shutdownCamera();void reloadTick();}
 namespace gz {
 void initializeNativeOxygen();void resetRngForSpeedrun();void cancelPracticeForSpeedrun();void resetReloadForSpeedrun();void resetTimer();
 void suspendGz(){
@@ -27,6 +27,7 @@ extern "C" {
 MOD_EXPORT ModResult mod_initialize(ModError*) {
  auto r=gz::initSpeedrunGuard();if(r!=MOD_OK)return r;
  r=gz::initPresentation();if(r!=MOD_OK)return r;
+ r=gz::initInterpolation();if(r!=MOD_OK)return r;
  r=gz::initLoading();if(r!=MOD_OK)return r;
  r=gz::initCheats();if(r!=MOD_OK)return r;
  r=gz::initInput();if(r!=MOD_OK)return r;

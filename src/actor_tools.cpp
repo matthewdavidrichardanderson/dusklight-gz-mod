@@ -4,6 +4,7 @@
 #include "core.hpp"
 #include "actor_tools.hpp"
 #include "actor_motion.hpp"
+#include "interpolation.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"
 #include "mods/svc/camera.h"
@@ -41,6 +42,8 @@ cXyz savedEye(0,0,0),savedCenter(0,0,0);
 float savedFovy=45;
 s16 savedBank=0;
 ActorMotion motion;
+PositionSamples actorGizmoHistory;
+fpc_ProcID actorGizmoOwner=~fpc_ProcID(0);
 CameraOperatorHandle cameraHandle=0;
 constexpr u32 collisionMask=dBgS_Acch::FLAG_GRND_NONE|dBgS_Acch::FLAG_WALL_NONE|
  dBgS_Acch::FLAG_ROOF_NONE|dBgS_Acch::FLAG_LINE_CHECK_NONE;
@@ -89,6 +92,7 @@ void spawn(){
 bool actorViewActive(){return viewing&&!speedrunBlocked()&&!sceneLoading()&&playable()&&gzCurrentPage()=="actor list";}
 void shutdownActorView(){
  releaseLink();
+ actorGizmoHistory.reset();actorGizmoOwner=~fpc_ProcID(0);
  if(!viewing)return;
  auto* link=daAlink_getAlinkActorClass();
  if(!sceneLoading()&&link&&fopAcM_GetID(link)==viewOwner){
@@ -232,6 +236,7 @@ bool drawActorMenu(std::string_view page){
  return true;
 }
 DEFINE_HOOK_SYMBOL("dDbVw_deleteDrawPacketList",void(),ActorGizmoFrame);
+DEFINE_HOOK_SYMBOL("src/f_op/f_op_actor.cpp#fopAc_Execute",int(void*),ActorGizmoCapture);
 DEFINE_HOOK(&daAlink_c::posMove,ActorHoldLink);
 DEFINE_HOOK_SYMBOL("dBgS_Acch::CrrPos",void(dBgS_Acch*,dBgS&),ActorGroundState);
 ModResult initActorTools(){
@@ -254,14 +259,26 @@ ModResult initActorTools(){
   // flags intact; Link's temporary collision bypass is leased separately.
   if(actorViewActive())mods::arg<dBgS_Acch*>(args,0)->m_flags|=dBgS_Acch::FLAG_GROUND_HIT;
  });if(r!=MOD_OK)return r;
+ r=guardedPost<ActorGizmoCapture>([](ModContext*,void* args,void*,void*){
+  if(!actorViewActive()){
+   actorGizmoHistory.reset();actorGizmoOwner=~fpc_ProcID(0);return;
+  }
+  auto* actor=mods::arg<fopAc_ac_c*>(args,0);
+  if(!actor||fopAcM_GetID(actor)!=selected)return;
+  const auto owner=fopAcM_GetID(actor);
+  if(owner!=actorGizmoOwner){actorGizmoHistory.reset();actorGizmoOwner=owner;}
+  actorGizmoHistory.capture(&actor->current.pos,1);
+ });if(r!=MOD_OK)return r;
  return guardedPost<ActorGizmoFrame>([](ModContext*,void*,void*,void*){
   if(!actorViewActive())return;
   auto* actor=selectedActor();if(!actor)return;
+  cXyz pos=actor->current.pos;
+  if(fopAcM_GetID(actor)==actorGizmoOwner)pos=actorGizmoHistory.read(0,pos);
   cXyz size(10,10,10);csXyz rotation(0,0,0);GXColor white{255,255,255,255};
-  dDbVw_drawCubeXlu(actor->current.pos,size,rotation,white);
+  dDbVw_drawCubeXlu(pos,size,rotation,white);
   const GXColor colors[]={{255,0,0,255},{0,255,0,255},{0,0,255,255}};
   for(int i=0;i<3;i++){
-   cXyz a=actor->current.pos,b=a;
+   cXyz a=pos,b=a;
    if(i==0){a.x+=200;b.x-=200;}else if(i==1){a.y+=200;b.y-=200;}else{a.z+=200;b.z-=200;}
    dDbVw_drawLineXlu(a,b,colors[i],0,20);
   }
