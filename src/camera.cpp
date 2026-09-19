@@ -15,6 +15,7 @@ static u8 savedEventStatus=0;
 static fpc_ProcID owner=~fpc_ProcID(0);
 static CameraOperatorHandle cameraHandle=0;
 static FreeCamera camera;
+bool freeCameraActive(){return active;}
 bool freeCameraPosition(cXyz& out){if(!active)return false;out.set(float(camera.eye[0]),float(camera.eye[1]),float(camera.eye[2]));return true;}
 static void releaseEvent(){
  // The event halt is global and survives replacement of the player actor.

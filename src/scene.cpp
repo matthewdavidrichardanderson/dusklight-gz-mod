@@ -7,11 +7,13 @@
 #include "d/d_com_inf_actor.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_meter_HIO.h"
+#include "d/d_meter2_draw.h"
 #include "f_op/f_op_actor.h"
 #include "Z2AudioLib/Z2SoundMgr.h"
 #include <array>
 #include <cmath>
 namespace gz {
+bool freeCameraActive();
 namespace {
 template<class T> struct Override {
  bool owned=false;T saved{},written{};
@@ -36,8 +38,10 @@ float& audioVolume(Z2SoundMgr* sound,int i){
 }
 float normalizedTime(){float t=std::fmod(dComIfGs_getTime(),360.f);return t<0?t+360:t;}
 void setClock(int hours,int minutes){dComIfGs_setTime(float((hours*60+minutes+1440)%1440)*.25f);}
+bool hideHud(){return on("hide_hud")||freeCameraActive()||moveLinkActive()||actorViewActive();}
 }
 DEFINE_HOOK_SYMBOL("Z2SoundMgr::mixOut",void(Z2SoundMgr*),SceneAudioMix);
+DEFINE_HOOK_SYMBOL("dMeter2Draw_c::draw",void(dMeter2Draw_c*),SceneHudDraw);
 void initScene(){
  static u32 category=0,sound=0;
  number("sound_category","Sound test","category id:",0,9,[](){return category;},[](int64_t v){category=u32(v);});
@@ -59,7 +63,7 @@ void initScene(){
 void sceneTick(){
  actors.apply(g_dComIfAc_gameInfo.mPause,on("freeze_actors"),true);
  camera.apply(dComIfGp_getEventManager().mCameraPlay,on("freeze_camera")||moveLinkActive()||actorViewActive(),1);
- hud.apply(g_drawHIO.mParentAlpha,on("hide_hud")||moveLinkActive()||actorViewActive(),0.f);
+ hud.apply(g_drawHIO.mParentAlpha,hideHud(),0.f);
  auto flags=fopAc_ac_c::getStopStatus();
  if(on("hide_actors")){
   if(!hidden){wasHidden=(flags&0x100)!=0;hidden=true;}
@@ -87,7 +91,11 @@ void shutdownScene(){
  timeOwned=false;
 }
 ModResult installScene(){
- auto r=guardedPre<SceneAudioMix>([](ModContext*,void* args,void*,void*){
+ auto r=guardedPre<SceneHudDraw>([](ModContext*,void*,void*,void*){
+  return hideHud()?HOOK_SKIP_ORIGINAL:HOOK_CONTINUE;
+ });
+ if(r!=MOD_OK)return r;
+ r=guardedPre<SceneAudioMix>([](ModContext*,void* args,void*,void*){
   auto* sound=mods::arg<Z2SoundMgr*>(args,0);
   const bool music=on("disable_bgm"),effects=on("disable_sfx");
   audioActive=music||effects;audioOwner=sound;
