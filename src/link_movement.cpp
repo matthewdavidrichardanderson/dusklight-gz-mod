@@ -648,9 +648,11 @@ void daAlink_c::setSwimMoveAnime() {
         field_0x3478 = mpHIO->mSwim.m.mUnderwaterMinAnmSpeed;
         field_0x347c = mpHIO->mSwim.m.mUnderwaterMaxAnmSpeed;
 
+        IF_DUSK(const bool holdToMash = DUSK_IF_ELSE(gz::movementSetting(4), false);)
+
         if (mMaxSpeed < 50.0f) {
             mMaxSpeed = 50.0f;
-        } else if (doTrigger()) {
+        } else if (holdToMash ? doButton() : doTrigger()) {
             mMaxSpeed += 0.75f;
             if (mMaxSpeed > temp_f29) {
                 mMaxSpeed = temp_f29;

@@ -13,7 +13,9 @@ permissions:
 env:
   # Keep this in sync with the revision recorded in NOTICE.md and
   # the source hashes checked by CMakeLists.txt.
-  DUSKLIGHT_REVISION: d34226ad1dcd261dcb738d27daa808bcf81e44dd
+  DUSKLIGHT_REVISION: e9b120544cb75e81b5aa36777f1688fa61f2d9e8
+  SYMGEN_VERSION: v1.3.6
+  SYMGEN_LINUX_X86_64_SHA256: 236bc5cd4bda03a8dd53a4531efff1fec3bcd19b09890893b9b6f8f5ae77f041
 
 jobs:
   build:
@@ -69,7 +71,7 @@ jobs:
         run: |
           dusklight_dir="$(cd dusklight-upstream && pwd)"
           cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=ON \
             "-DDUSK_DIR=${dusklight_dir}" \
             ${{ matrix.cmake_args }}
@@ -80,7 +82,7 @@ jobs:
         run: |
           $dusklightDir = (Resolve-Path -LiteralPath 'dusklight-upstream').Path
           cmake -S . -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+            -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_TESTING=ON `
             "-DDUSK_DIR=$dusklightDir"
 
@@ -95,4 +97,42 @@ jobs:
         with:
           name: mod-${{ matrix.platform }}
           path: build/mods/*.dusk
+          if-no-files-found: error
+  combine:
+    name: Combine desktop packages
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Dusklight GZ
+        uses: actions/checkout@v4
+
+      - name: Download platform packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mod-*
+          path: artifacts
+          merge-multiple: false
+
+      - name: Install symgen
+        run: |
+          curl -fsSL -o symgen \
+            "https://github.com/encounter/symgen/releases/download/${SYMGEN_VERSION}/symgen-linux-x86_64"
+          echo "${SYMGEN_LINUX_X86_64_SHA256}  symgen" | sha256sum --check --strict
+          chmod +x symgen
+
+      - name: Build and validate combined package
+        run: |
+          python3 .github/scripts/merge_mod.py \
+            --output dist/dusklight_gz.dusk \
+            --symgen ./symgen \
+            artifacts/*/*.dusk
+          (cd dist && sha256sum dusklight_gz.dusk > dusklight_gz.dusk.sha256)
+
+      - name: Upload combined package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dusklight-gz-all-platforms
+          path: |
+            dist/dusklight_gz.dusk
+            dist/dusklight_gz.dusk.sha256
           if-no-files-found: error

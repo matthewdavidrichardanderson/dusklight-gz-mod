@@ -8,7 +8,7 @@ The [TPGZ project documentation](https://wiki.tprandomizer.com/index.php?title=P
 
 ## Dusklight
 
-Some native game/decompilation material is adapted from [TwilitRealm/dusklight](https://github.com/TwilitRealm/dusklight). The applicable CC0 1.0 text is included at [`res/DECOMP-LICENSE.md`](res/DECOMP-LICENSE.md). The reviewed source revision is `d34226ad1dcd261dcb738d27daa808bcf81e44dd`.
+Some native game/decompilation material is adapted from [TwilitRealm/dusklight](https://github.com/TwilitRealm/dusklight). The applicable CC0 1.0 text is included at [`res/DECOMP-LICENSE.md`](res/DECOMP-LICENSE.md). The reviewed source revision is `e9b120544cb75e81b5aa36777f1688fa61f2d9e8`.
 
 ## Dear ImGui
 

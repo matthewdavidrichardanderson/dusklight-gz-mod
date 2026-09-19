@@ -4,7 +4,7 @@
 #include <string_view>
 // Read-only native CVar access; no dependency on UserSettings member offsets.
 namespace gz {
-static dusk::config::ConfigVar<bool>* movementSettings[4]{};
+static dusk::config::ConfigVar<bool>* movementSettings[5]{};
 static dusk::config::ConfigVarBase* (*findHostSetting)(std::string_view)=nullptr;
 bool movementSetting(unsigned index){return movementSettings[index]->getValue();}
 static ModResult initMovementSettings(){
@@ -12,9 +12,9 @@ static ModResult initMovementSettings(){
  auto r=svc_hook->resolve(mod_ctx,"dusk::config::GetConfigVar",&address,&flags);
  if(r!=MOD_OK||!address||!(flags&HOOK_SYMBOL_CODE))return MOD_UNAVAILABLE;
  findHostSetting=reinterpret_cast<decltype(findHostSetting)>(address);
- const char* names[]={"game.fastRoll","game.enableFastIronBoots","game.invertAirSwimX","game.invertAirSwimY"};
- for(unsigned i=0;i<4;i++){
-  // These four registered host settings are declared ConfigVar<bool>.
+ const char* names[]={"game.fastRoll","game.enableFastIronBoots","game.invertAirSwimX","game.invertAirSwimY","game.holdToMash"};
+ for(unsigned i=0;i<5;i++){
+  // These five registered host settings are declared ConfigVar<bool>.
   // Do not import host RTTI: it is not part of the exported mod ABI.
   movementSettings[i]=static_cast<dusk::config::ConfigVar<bool>*>(findHostSetting(names[i]));
   if(!movementSettings[i]){
