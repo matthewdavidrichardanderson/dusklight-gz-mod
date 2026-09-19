@@ -38,6 +38,12 @@ void beginGzDraw(){
 // Triforce digits use oversized display capitals; reduce them around the
 // same baseline, including their advance so alignment and measurement agree.
 static float glyphScale(unsigned char c){return loadedFont==8&&c>='0'&&c<='9'?.85f:1.f;}
+// Both j outlines overhang their advances; drawing width must not move the pen.
+static float glyphAdvance(unsigned char c,const Glyph& g){
+ if(c=='j'&&loadedFont==9)return 5.5f;
+ if(c=='j'&&loadedFont==10)return 6.f;
+ return g.width;
+}
 static void drawText(const std::string& text,float x,float y,uint32_t color,float size){
  if(!drawing||loadedFont<0)return;
  const auto& font=fonts[loadedFont];const auto& f=font.data;
@@ -47,7 +53,7 @@ static void drawText(const std::string& text,float x,float y,uint32_t color,floa
   const auto& g=f.glyphs[c];
   const float scale=baseScale*glyphScale(c);
   foregroundQuad(font.texture,x+g.offset*scale,y-f.ascender*scale,x+(g.width+g.offset)*scale,y+f.descender*scale,g.minX,g.minY,g.maxX,g.maxY,color);
-  x+=g.width*scale;
+  x+=glyphAdvance(c,g)*scale;
  }
 }
 void drawGzText(const std::string& text,float x,float y,uint32_t color,float size){
@@ -55,7 +61,7 @@ void drawGzText(const std::string& text,float x,float y,uint32_t color,float siz
 }
 float gzTextWidth(const std::string& text,float size){
  if(loadedFont<0)return 0;const auto& f=fonts[loadedFont].data;
- float width=0;for(unsigned char c:text){if(c>=f.glyphs.size())c='?';width+=f.glyphs[c].width*size/f.baseSize*glyphScale(c);}return width;
+ float width=0;for(unsigned char c:text){if(c>=f.glyphs.size())c='?';width+=glyphAdvance(c,f.glyphs[c])*size/f.baseSize*glyphScale(c);}return width;
 }
 void drawGzTextPlain(const std::string& text,float x,float y,uint32_t color,float size){drawText(text,x,y,color,size);}
 void beginGzShape(unsigned count,unsigned kind,unsigned width){

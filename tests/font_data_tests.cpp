@@ -21,6 +21,12 @@ int main(int argc,char** argv){
   std::vector<unsigned char> blob((std::istreambuf_iterator<char>(f)),{});
   if(!gz::decodeFont(blob,decoded)){std::cerr<<file.path();return 7;}
   if(gz::fontPixels(decoded,std::span(blob).subspan(decoded.textureOffset)).size()!=size_t(decoded.width)*decoded.height*4)return 13;
+  if(file.path().stem()=="papyrus"){
+   // Papyrus j needs its full overhanging outline, not an advance-width crop.
+   if(decoded.glyphs['j'].offset!=-6||decoded.glyphs['j'].width!=11.5f)return 15;
+  }
+  if(file.path().stem()=="rodin-pro-b"&&
+     (decoded.glyphs['j'].offset!=-3.5f||decoded.glyphs['j'].width!=9.75f))return 16;
   fonts++;
  }
  if(fonts!=11)return 8;
