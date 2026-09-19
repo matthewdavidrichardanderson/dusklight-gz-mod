@@ -3,8 +3,8 @@
 #include "gz_font.hpp"
 #include "presentation.hpp"
 #include "d/d_com_inf_game.h"
+#include "d/d_kankyo.h"
 #include "d/actor/d_a_alink.h"
-#include "Z2AudioLib/Z2StatusMgr.h"
 #include <cstdio>
 #include <cmath>
 #include "link_tools.hpp"
@@ -13,8 +13,7 @@ void drawLinkDebug(){
  const auto pos=spritePosition(LinkDebug);
  char line[128];float y=pos.y;
  auto draw=[&](const char* format,auto... args){if constexpr(sizeof...(args)==0)std::snprintf(line,sizeof(line),"%s",format);else std::snprintf(line,sizeof(line),format,args...);drawGzText(line,pos.x,y);y+=20;};
- const auto* audio=Z2GetStatusMgr();
- if(audio)draw("time: %02d:%02d",int(audio->mHour),int(audio->mMinute));else draw("time: n/a");
+ draw("time: %02d:%02d",dKy_getdaytime_hour(),dKy_getdaytime_minute());
  auto* p=daAlink_getAlinkActorClass();
  if(p){
   draw("angle: %d",int(u16(p->shape_angle.y)));
