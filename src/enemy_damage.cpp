@@ -1,5 +1,5 @@
 /*
- * Source adaptation of cc_at_check in TP decomp / dusklight-upstream/src/d/d_cc_uty.cpp.
+ * Source adaptation of cc_at_check in Dusklight src/d/d_cc_uty.cpp.
  * GZ suppresses health subtraction, retaining collision sound, direction and hitstop.
  * Native Bulblin actor_set replaces the fixed 0x129a console offset.
  * Host original remains unchanged when the cheat is disabled.

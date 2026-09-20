@@ -50,7 +50,7 @@ jobs:
         with:
           repository: TwilitRealm/dusklight
           ref: ${{ env.DUSKLIGHT_REVISION }}
-          path: dusklight-upstream
+          path: host-sdk
           fetch-depth: 1
           submodules: recursive
 
@@ -69,7 +69,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          dusklight_dir="$(cd dusklight-upstream && pwd)"
+          dusklight_dir="$(cd host-sdk && pwd)"
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=ON \
@@ -80,7 +80,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          $dusklightDir = (Resolve-Path -LiteralPath 'dusklight-upstream').Path
+          $dusklightDir = (Resolve-Path -LiteralPath 'host-sdk').Path
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_TESTING=ON `

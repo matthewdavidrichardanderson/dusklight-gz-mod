@@ -7,6 +7,7 @@
 #include "interpolation.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"
+#include "mirror_mode.hpp"
 #include "mods/svc/camera.h"
 #include "d/d_camera.h"
 #include "d/d_menu_window.h"
@@ -133,8 +134,10 @@ void actorViewTick(){
  bool hostVisible=false;svc_ui->is_any_document_visible(mod_ctx,&hostVisible);
  if(hostVisible)return;
  auto* pad=mDoCPd_c::getGamePad(0);if(!pad)return;
+ const bool mirrored=mirrorModeEnabled();
  const auto delta=motion.update(actor->shape_angle.y,actor->shape_angle.x,
-  pad->mMainStick.mRawX,pad->mMainStick.mRawY,pad->mSubStick.mRawX,pad->mSubStick.mRawY,u16(pad->getButton()));
+  screenHorizontal(pad->mMainStick.mRawX,mirrored),pad->mMainStick.mRawY,
+  screenHorizontal(pad->mSubStick.mRawX,mirrored),pad->mSubStick.mRawY,u16(pad->getButton()));
  actor->current.pos+=cXyz(delta[0],delta[1],delta[2]);
 }
 void actorMenuUnloaded(std::string_view page,bool deleted){

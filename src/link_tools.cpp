@@ -3,6 +3,7 @@
 #include "actor_tools.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"
+#include "mirror_mode.hpp"
 #include "mods/svc/camera.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_camera.h"
@@ -66,8 +67,9 @@ void moveLinkTick(){
  const double yaw=std::atan2(center.z-eye.z,center.x-eye.x);
  const double horizontal=std::sqrt(double(center.x-eye.x)*(center.x-eye.x)+double(center.z-eye.z)*(center.z-eye.z));
  const double pitch=std::atan2(center.y-eye.y,horizontal);
- const int sx=pad->mMainStick.mRawX,sy=pad->mMainStick.mRawY;
- const int vertical=pad->mSubStick.mRawY,horizontalInput=-pad->mSubStick.mRawX;
+ const bool mirrored=mirrorModeEnabled();
+ const int sx=screenHorizontal(pad->mMainStick.mRawX,mirrored),sy=pad->mMainStick.mRawY;
+ const int vertical=pad->mSubStick.mRawY,horizontalInput=-screenHorizontal(pad->mSubStick.mRawX,mirrored);
  const bool fast=(buttons&PAD_TRIGGER_Z)!=0,veryFast=(buttons&PAD_TRIGGER_R)!=0;
  const double speed=fast?(veryFast?10.:2.5):1.;
  const int rotation=fast?(veryFast?800:80):30;

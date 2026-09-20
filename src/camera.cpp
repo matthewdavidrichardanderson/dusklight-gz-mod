@@ -2,6 +2,7 @@
 #include "core.hpp"
 #include "link_tools.hpp"
 #include "loading.hpp"
+#include "mirror_mode.hpp"
 #include "camera_logic.hpp"
 #include "mods/svc/camera.h"
 #include "d/d_com_inf_game.h"
@@ -53,8 +54,9 @@ ModResult initCamera(){
    const auto& buttons=pad->mButton;
    const auto left=buttons.mAnalogL>=10?buttons.mAnalogL:0;
    const auto right=buttons.mAnalogR>=10?buttons.mAnalogR:0;
-   camera.update(pad->mMainStick.mRawY,pad->mMainStick.mRawX,left-right,
-                 pad->mSubStick.mRawY,pad->mSubStick.mRawX,(buttons.mButton&PAD_TRIGGER_Z)!=0);
+   const bool mirrored=mirrorModeEnabled();
+   camera.update(pad->mMainStick.mRawY,screenHorizontal(pad->mMainStick.mRawX,mirrored),left-right,
+                 pad->mSubStick.mRawY,screenHorizontal(pad->mSubStick.mRawX,mirrored),(buttons.mButton&PAD_TRIGGER_Z)!=0);
   }
   for(int i=0;i<3;i++){state->eye[i]=static_cast<float>(camera.eye[i]);state->center[i]=static_cast<float>(camera.center[i]);}
   // Keep the host's fovy, aspect and bank values.

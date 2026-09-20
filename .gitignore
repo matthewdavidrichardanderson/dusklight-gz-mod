@@ -4,3 +4,4 @@
 *.user
 /tools/
 /docs/
+/build*/
