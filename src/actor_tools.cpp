@@ -239,7 +239,7 @@ bool drawActorMenu(std::string_view page){
  return true;
 }
 DEFINE_HOOK_SYMBOL("dDbVw_deleteDrawPacketList",void(),ActorGizmoFrame);
-DEFINE_HOOK_SYMBOL("src/f_op/f_op_actor.cpp#fopAc_Execute",int(void*),ActorGizmoCapture);
+DEFINE_HOOK(&fpcBs_Execute,ActorGizmoCapture);
 DEFINE_HOOK(&daAlink_c::posMove,ActorHoldLink);
 DEFINE_HOOK_SYMBOL("dBgS_Acch::CrrPos",void(dBgS_Acch*,dBgS&),ActorGroundState);
 ModResult initActorTools(){
@@ -266,8 +266,9 @@ ModResult initActorTools(){
   if(!actorViewActive()){
    actorGizmoHistory.reset();actorGizmoOwner=~fpc_ProcID(0);return;
   }
-  auto* actor=mods::arg<fopAc_ac_c*>(args,0);
-  if(!actor||fopAcM_GetID(actor)!=selected)return;
+  auto* process=mods::arg<base_process_class*>(args,0);
+  auto* actor=selectedActor();
+  if(!process||!actor||static_cast<base_process_class*>(actor)!=process)return;
   const auto owner=fopAcM_GetID(actor);
   if(owner!=actorGizmoOwner){actorGizmoHistory.reset();actorGizmoOwner=owner;}
   actorGizmoHistory.capture(&actor->current.pos,1);
