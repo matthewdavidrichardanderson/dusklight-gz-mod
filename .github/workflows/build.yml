@@ -50,9 +50,10 @@ jobs:
             runner: ubuntu-24.04-arm
           - platform: macos-arm64
             runner: macos-latest
+            cmake_args: -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
           - platform: macos-x86_64
             runner: macos-latest
-            cmake_args: -DCMAKE_OSX_ARCHITECTURES=x86_64
+            cmake_args: -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
           - platform: windows-amd64
             runner: windows-latest
             msvc_arch: amd64
