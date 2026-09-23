@@ -68,7 +68,7 @@ add_mod(dusklight_gz FEATURES game webgpu
 if(MSVC)
  target_link_options(dusklight_gz PRIVATE "/PDBALTPATH:dusklight_gz.pdb")
 endif()
-set_source_files_properties(src/link_movement.cpp src/input.cpp src/clawshot.cpp src/interpolation.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
+set_source_files_properties(src/link_movement.cpp src/input.cpp src/clawshot.cpp src/interpolation.cpp src/speedrun_guard.cpp PROPERTIES INCLUDE_DIRECTORIES "${DUSK_DIR}/src")
 if(PROJECT_IS_TOP_LEVEL)
  include(CTest)
 endif()
